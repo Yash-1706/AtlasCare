@@ -30,13 +30,45 @@
             android:enabled="false"
             android:inputType="textPersonName"/>
 
-        <!-- Input Field for Patient Name (Initially Enabled) -->
+        <!-- Patient Name Label -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Patient Name:"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingTop="8dp"/>
+
+        <!-- Patient Name Input Field -->
         <EditText
             android:id="@+id/etPatientName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Patient Name"
-            android:inputType="textPersonName"/>
+            android:inputType="textPersonName"
+            android:padding="8dp"/>
+
+        <!-- Diagnosis Label -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Diagnosis:"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingTop="8dp"/>
+
+        <!-- Diagnosis Input Field -->
+        <EditText
+            android:id="@+id/etDiagnosis"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter Diagnosis"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:gravity="top"
+            android:padding="8dp"/>
+
+
 
         <!-- Date Field with Label -->
         <TextView

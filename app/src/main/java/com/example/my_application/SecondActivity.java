@@ -17,7 +17,7 @@ import java.util.Locale;
 
 public class SecondActivity extends AppCompatActivity {
     private CheckBox checkBoxExistingPatient;
-    private EditText etSearchPatient, etPatientName, etDate, etTime;
+    private EditText etSearchPatient, etPatientName, etDate, etTime, etDiagnosis;
     private Button btnSave;
     private ArrayList<String> patientList;
 
@@ -26,11 +26,13 @@ public class SecondActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
 
+        // Initialize Views
         checkBoxExistingPatient = findViewById(R.id.checkBoxExistingPatient);
         etSearchPatient = findViewById(R.id.etSearchPatient);
         etPatientName = findViewById(R.id.etPatientName);
         etDate = findViewById(R.id.etDate);
         etTime = findViewById(R.id.etTime);
+        etDiagnosis = findViewById(R.id.etDiagnosis);  // Initialize diagnosis field
         btnSave = findViewById(R.id.btnSave);
 
         // Sample patient list (Replace with real data)
@@ -86,11 +88,12 @@ public class SecondActivity extends AppCompatActivity {
             String searchPatient = etSearchPatient.getText().toString().trim();
             String date = etDate.getText().toString();
             String time = etTime.getText().toString();
+            String diagnosis = etDiagnosis.getText().toString().trim();  // Get diagnosis text
 
             // Validation: Check if all fields are filled
             if ((!checkBoxExistingPatient.isChecked() && patientName.isEmpty()) ||
                     (checkBoxExistingPatient.isChecked() && searchPatient.isEmpty()) ||
-                    date.isEmpty() || time.isEmpty()) {
+                    date.isEmpty() || time.isEmpty() || diagnosis.isEmpty()) {
                 Toast.makeText(SecondActivity.this, "Please fill all fields", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(SecondActivity.this, "Saved Successfully!", Toast.LENGTH_SHORT).show();
@@ -101,5 +104,25 @@ public class SecondActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        btnSave.setOnClickListener(v -> {
+            String patientName = etPatientName.getText().toString().trim();
+            String diagnosis = etDiagnosis.getText().toString().trim();
+
+            // Validation Check
+            if (patientName.isEmpty() || diagnosis.isEmpty()) {
+                Toast.makeText(SecondActivity.this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // If everything is filled correctly
+            Toast.makeText(SecondActivity.this, "Saved Successfully!", Toast.LENGTH_SHORT).show();
+
+            // Redirect to Main Screen & Clear Activity Stack
+            Intent intent = new Intent(SecondActivity.this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        });
+
     }
 }
