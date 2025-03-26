@@ -25,8 +25,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
-        tools:targetApi="31"
-        tools:ignore="ExtraText">
+        tools:targetApi="31">
         <activity
             android:name=".SecondActivity"
             android:exported="false" />
