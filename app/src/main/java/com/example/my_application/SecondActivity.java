@@ -140,16 +140,6 @@ public class SecondActivity extends AppCompatActivity {
     }
 
     // Open Camera
-//    private void openCamera() {
-//        Intent takePictureIntent = new Intent("android.media.action.IMAGE_CAPTURE");
-//        try {
-//            startActivityForResult(takePictureIntent, CAMERA_REQUEST);
-//        } catch (ActivityNotFoundException e) {
-//            Log.e("DEBUG_CAMERA", "Camera Activity Not Found!");
-//            Toast.makeText(this, "No camera app available!", Toast.LENGTH_SHORT).show();
-//        }
-//    }
-    //new gpt code
     private void openCamera() {
         Intent takePictureIntent = new Intent("android.media.action.IMAGE_CAPTURE");
 
@@ -165,10 +155,6 @@ public class SecondActivity extends AppCompatActivity {
             Toast.makeText(this, "Error while creating file!", Toast.LENGTH_SHORT).show();
         }
     }
-
-
-
-
 
 
 
@@ -277,9 +263,21 @@ public class SecondActivity extends AppCompatActivity {
 
     // Save patient data after validation
     private void savePatientData() {
-        Toast.makeText(SecondActivity.this, "Saved Successfully!", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(SecondActivity.this, MainActivity.class);
+        String patientName = etPatientName.getText().toString().trim();
+        String searchedPatient = etSearchPatient.getText().toString().trim();
+        String diagnosis = etDiagnosis.getText().toString().trim();
+        boolean isExistingPatient = checkBoxExistingPatient.isChecked();
+
+        // Validation: Check if either Patient Name (new) or Search Field (existing) is filled
+        if ((isExistingPatient && searchedPatient.isEmpty()) || (!isExistingPatient && patientName.isEmpty()) || diagnosis.isEmpty()) {
+            Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Toast.makeText(this, "Saved Successfully!", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
     }
+
 }
