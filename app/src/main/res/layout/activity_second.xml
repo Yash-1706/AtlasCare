@@ -14,61 +14,69 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Checkbox for Existing Patient -->
+        <CheckBox
+            android:id="@+id/checkBoxExistingPatient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Have you diagnosed this patient before?" />
+
+        <!-- Search Field (Initially Disabled) -->
+        <EditText
+            android:id="@+id/etSearchPatient"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Search existing patient"
+            android:enabled="false"
+            android:inputType="textPersonName"/>
+
+        <!-- Input Field for Patient Name (Initially Enabled) -->
         <EditText
             android:id="@+id/etPatientName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Patient Name"/>
+            android:hint="Enter Patient Name"
+            android:inputType="textPersonName"/>
 
-        <EditText
-            android:id="@+id/etCaseNumber"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Case Number"
-            android:inputType="number"/>
-
-        <EditText
-            android:id="@+id/etAge"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Age"
-            android:inputType="number"/>
-
-        <!-- Date Picker -->
+        <!-- Date Field with Label -->
         <TextView
-            android:id="@+id/tvSelectedDate"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Select Date"
-            android:textSize="16sp"
-            android:padding="10dp"
-            android:background="#E0E0E0"/>
-
-        <Button
-            android:id="@+id/btnPickDate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Pick Date"/>
-
-        <!-- Blood Group Dropdown (Spinner) -->
-        <Spinner
-            android:id="@+id/spinnerBloodGroup"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
+            android:text="Date: "
+            android:textStyle="bold"/>
         <EditText
-            android:id="@+id/etPhoneNumber"
+            android:id="@+id/etDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Phone Number"
-            android:inputType="phone"/>
+            android:focusable="false"
+            android:clickable="false"
+            android:padding="10dp"
+            android:background="@android:color/darker_gray"/>
 
+        <!-- Time Field with Label -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Time: "
+            android:textStyle="bold"/>
+        <EditText
+            android:id="@+id/etTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="false"
+            android:clickable="false"
+            android:padding="10dp"
+            android:background="@android:color/darker_gray"/>
+
+        <!-- Save Button at Bottom -->
         <Button
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save"/>
+            android:text="Save"
+            android:layout_marginTop="20dp"/>
     </LinearLayout>
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,19 +1,21 @@
 package com.example.my_application;
 
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
 import java.util.List;
 
 public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientViewHolder> {
     private List<PatientModel> patientList;
+    private List<PatientModel> fullList; // For search filtering
 
     public PatientAdapter(List<PatientModel> patientList) {
-        this.patientList = patientList;
+        this.patientList = new ArrayList<>(patientList);
+        this.fullList = new ArrayList<>(patientList);
     }
 
     @NonNull
@@ -43,5 +45,20 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientV
             tvPatientName = itemView.findViewById(R.id.tvPatientName);
             tvCaseNumber = itemView.findViewById(R.id.tvCaseNumber);
         }
+    }
+
+    // Search Filter
+    public void filterList(String query) {
+        patientList.clear();
+        if (query.isEmpty()) {
+            patientList.addAll(fullList);
+        } else {
+            for (PatientModel patient : fullList) {
+                if (patient.getName().toLowerCase().contains(query.toLowerCase())) {
+                    patientList.add(patient);
+                }
+            }
+        }
+        notifyDataSetChanged();
     }
 }

@@ -3,23 +3,32 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Toolbar for App Name -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:title="AtlasCare"
-        android:titleTextColor="@android:color/white"/>
-
-    <!-- Main content area to prevent overlap -->
     <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingTop="?attr/actionBarSize">  <!-- Ensure content starts below the Toolbar -->
+        android:orientation="vertical">
 
-        <!-- RecyclerView for patient list -->
+        <!-- Toolbar (WhatsApp-style top bar) -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:title="AtlasCare"
+            android:titleTextColor="@android:color/white"/>
+
+        <!-- Search Bar for Searching Patients -->
+        <SearchView
+            android:id="@+id/searchPatient"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:queryHint="Search Patient"
+            android:iconifiedByDefault="false"
+            android:background="@android:color/white"
+            android:padding="10dp"/>
+
+        <!-- RecyclerView for displaying patient list -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewPatients"
             android:layout_width="match_parent"
@@ -28,7 +37,7 @@
             android:divider="?android:attr/listDivider"
             android:padding="10dp"/>
 
-        <!-- Floating Action Button to Add Patients -->
+        <!-- Floating Action Button to Add New Patients -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabAddPatient"
             android:layout_width="wrap_content"
@@ -37,5 +46,6 @@
             android:layout_gravity="end|bottom"
             android:layout_margin="16dp"/>
     </LinearLayout>
+
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
