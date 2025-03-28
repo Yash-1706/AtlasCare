@@ -14,22 +14,6 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Checkbox for Existing Patient -->
-        <CheckBox
-            android:id="@+id/checkBoxExistingPatient"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Have you diagnosed this patient before?" />
-
-        <!-- Search Field (Initially Disabled) -->
-        <EditText
-            android:id="@+id/etSearchPatient"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Search existing patient"
-            android:enabled="false"
-            android:inputType="textPersonName"/>
-
         <!-- Patient Name Label -->
         <TextView
             android:layout_width="wrap_content"
@@ -48,25 +32,37 @@
             android:inputType="textPersonName"
             android:padding="8dp"/>
 
-        <!-- Diagnosis Label -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Diagnosis:"
+            android:text="Known Diagnosis:"
             android:textSize="16sp"
-            android:textStyle="bold"
-            android:paddingTop="8dp"/>
+            android:textStyle="bold" />
 
-        <!-- Diagnosis Input Field -->
         <EditText
-            android:id="@+id/etDiagnosis"
+            android:id="@+id/etKnownDiagnosis"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter Diagnosis"
-            android:inputType="textMultiLine"
-            android:minLines="3"
-            android:gravity="top"
-            android:padding="8dp"/>
+            android:hint="Enter known diagnosis"
+            android:inputType="text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Current Diagnosis:"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <EditText
+            android:id="@+id/etCurrentDiagnosis"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter current diagnosis"
+            android:inputType="text" />
+
+
+
 
 
 
