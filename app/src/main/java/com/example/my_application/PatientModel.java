@@ -2,18 +2,26 @@ package com.example.my_application;
 
 public class PatientModel {
     private String name;
-    private String caseNumber;
+    private String knownDiagnosis;
+    private String currentDiagnosis;
 
-    public PatientModel(String name, String caseNumber) {
+    // Constructor (Ensure it accepts 3 parameters)
+    public PatientModel(String name, String knownDiagnosis, String currentDiagnosis) {
         this.name = name;
-        this.caseNumber = caseNumber;
+        this.knownDiagnosis = knownDiagnosis;
+        this.currentDiagnosis = currentDiagnosis;
     }
 
+    // Getters
     public String getName() {
         return name;
     }
 
-    public String getCaseNumber() {
-        return caseNumber;
+    public String getKnownDiagnosis() {
+        return knownDiagnosis;
+    }
+
+    public String getCurrentDiagnosis() {
+        return currentDiagnosis;
     }
 }

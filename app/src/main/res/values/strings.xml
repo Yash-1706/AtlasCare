@@ -1,3 +1,9 @@
 <resources>
+    <string name="app_name">AtlasCare</string>
     <string name="AtlasCare">My-Application</string>
+    <string name="statistics_screen">Statistics Screen</string>
+    <string name="home">Home</string>
+    <string name="statistics">Statistics</string>
+    <string name="todo">TODO</string>
+    <string name="todo2">TODO</string>
 </resources>

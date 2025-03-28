@@ -1,57 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <uses-feature android:name="android.hardware.camera.any" android:required="true"/>
-
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32"
-        tools:ignore="ScopedStorage" />
-
-
-
-
-
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.my_application">
 
     <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/AtlasCare"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
+        android:label="AtlasCare"
         android:theme="@style/Theme.MyApplication"
-        tools:targetApi="31">
-        <activity
-            android:name=".SecondActivity"
-            android:exported="false" />
-            android:configChanges="screenSize|orientation|keyboardHidden"
-            android:launchMode="singleTop"
-        <activity
-            android:name=".MainActivity"
+        android:allowBackup="true"
+        android:theme="@style/Theme.MyApplication"
+        tools:ignore="ExtraText">
+
+        <activity android:name=".MainActivity"
             android:exported="true">
+            <!-- THIS MAKES IT THE DEFAULT ACTIVITY -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.provider"
-            android:grantUriPermissions="true"
-            android:exported="false">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"/>
-        </provider>
-
+        <activity android:name=".AddPatientActivity"/>
+        <activity android:name=".StatisticsActivity"/>
 
     </application>
-
 </manifest>
