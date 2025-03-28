@@ -36,9 +36,11 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientV
 
     // Method to update the list when searching
     public void updateList(List<PatientModel> newList) {
-        patientList = newList;
+        patientList.clear();
+        patientList.addAll(newList);
         notifyDataSetChanged();
     }
+
 
     static class PatientViewHolder extends RecyclerView.ViewHolder {
         TextView textName;

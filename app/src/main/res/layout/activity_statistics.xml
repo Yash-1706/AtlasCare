@@ -1,12 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".StatisticsActivity">
 
+    <!-- App Title -->
     <TextView
+        android:id="@+id/statisticsTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/statistics_screen"
-        android:textSize="20sp"/>
+        android:text="Statistics"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:paddingBottom="8dp"/>
+
+    <!-- Search Patient Section -->
+    <EditText
+        android:id="@+id/searchPatient"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Search for a patient..."
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:padding="8dp"
+        android:background="@android:drawable/edit_text"
+        android:textSize="16sp"/>
+
+    <!-- Calendar Picker -->
+    <Button
+        android:id="@+id/selectDateButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select Date"
+        android:backgroundTint="@android:color/holo_blue_light"
+        android:textColor="@android:color/white"
+        android:padding="12dp"
+        android:layout_marginTop="8dp"/>
+
+    <!-- RecyclerView for displaying patient entries -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/patientRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="8dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"/>
+
+    <!-- Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:menu="@menu/bottom_nav_menu"/>
 </LinearLayout>
