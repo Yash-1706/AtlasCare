@@ -1,0 +1,48 @@
+package com.example.my_application;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.List;
+
+public class StatisticsAdapter extends RecyclerView.Adapter<StatisticsAdapter.ViewHolder> {
+    private List<PatientModel> patientList;
+
+    public StatisticsAdapter(List<PatientModel> patientList) {
+        this.patientList = patientList;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_patient, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        PatientModel patient = patientList.get(position);
+        holder.nameTextView.setText("Name: " + patient.getName());
+        holder.diagnosisTextView.setText("Diagnosis: " + patient.getCurrentDiagnosis());
+        holder.dateTextView.setText("Date: " + patient.getDate());
+    }
+
+    @Override
+    public int getItemCount() {
+        return patientList.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView nameTextView, diagnosisTextView, dateTextView;
+
+        public ViewHolder(View itemView) {
+            super(itemView);
+            nameTextView = itemView.findViewById(R.id.textViewPatientName);
+            diagnosisTextView = itemView.findViewById(R.id.textViewDiagnosis);
+            dateTextView = itemView.findViewById(R.id.textViewDate);
+        }
+    }
+}

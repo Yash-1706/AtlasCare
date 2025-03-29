@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +23,9 @@ public class StatisticsActivity extends AppCompatActivity {
     private Button selectDateButton;
     private RecyclerView patientRecyclerView;
     private PatientAdapter patientAdapter;
-    private List<PatientModel> patientList = new ArrayList<>(); // Replace with actual patient list
+    private List<PatientModel> patientList = new ArrayList<>();
+    private TextView todayPatientsCount, monthPatientsCount, selectedDatePatients;
+    private DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,11 +35,18 @@ public class StatisticsActivity extends AppCompatActivity {
         searchPatient = findViewById(R.id.searchPatient);
         selectDateButton = findViewById(R.id.selectDateButton);
         patientRecyclerView = findViewById(R.id.patientRecyclerView);
+        todayPatientsCount = findViewById(R.id.todayPatientsCount);
+        monthPatientsCount = findViewById(R.id.monthPatientsCount);
+        selectedDatePatients = findViewById(R.id.selectedDatePatients);
+        databaseHelper = new DatabaseHelper(this);
 
         // Initialize RecyclerView
         patientRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        patientAdapter = new PatientAdapter(patientList); // Replace with actual data
+        patientAdapter = new PatientAdapter(patientList);
         patientRecyclerView.setAdapter(patientAdapter);
+
+        // Update patient count on UI
+        updatePatientCounts();
 
         // Search Patient Feature
         searchPatient.addTextChangedListener(new android.text.TextWatcher() {
@@ -61,6 +71,14 @@ public class StatisticsActivity extends AppCompatActivity {
         bottomNavigationView.setOnNavigationItemSelectedListener(this::onNavigationItemSelected);
     }
 
+    private void updatePatientCounts() {
+        int todayCount = databaseHelper.getPatientCountForToday();
+        int monthCount = databaseHelper.getPatientCountForMonth();
+
+        todayPatientsCount.setText("Total patients visited today: " + todayCount);
+        monthPatientsCount.setText("Total patients visited this month: " + monthCount);
+    }
+
     private void filterPatients(String query) {
         List<PatientModel> filteredList = new ArrayList<>();
         for (PatientModel patient : patientList) {
@@ -77,6 +95,7 @@ public class StatisticsActivity extends AppCompatActivity {
                 this,
                 (view, year, month, dayOfMonth) -> {
                     String selectedDate = dayOfMonth + "/" + (month + 1) + "/" + year;
+                    selectedDatePatients.setText("Patients visited on " + selectedDate + ": " + getPatientCountForDate(selectedDate));
                     filterPatientsByDate(selectedDate);
                 },
                 calendar.get(Calendar.YEAR),
@@ -84,6 +103,10 @@ public class StatisticsActivity extends AppCompatActivity {
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
         datePickerDialog.show();
+    }
+
+    private int getPatientCountForDate(String date) {
+        return databaseHelper.getPatientCountForDate(date);
     }
 
     private void filterPatientsByDate(String selectedDate) {

@@ -36,7 +36,7 @@
 
         <!-- Patient Name Input Field -->
         <EditText
-            android:id="@+id/editTextPatientName"
+            android:id="@+id/patientNameEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Patient Name"
@@ -54,7 +54,7 @@
 
         <!-- Known Diagnosis Input Field -->
         <EditText
-            android:id="@+id/editTextKnownDiagnosis"
+            android:id="@+id/knownDiagnosisEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Known Diagnosis"
@@ -72,7 +72,7 @@
 
         <!-- Current Diagnosis Input Field -->
         <EditText
-            android:id="@+id/editTextCurrentDiagnosis"
+            android:id="@+id/currentDiagnosisEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Current Diagnosis"
