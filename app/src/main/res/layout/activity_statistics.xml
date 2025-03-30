@@ -19,17 +19,6 @@
         android:textStyle="bold"
         android:paddingBottom="8dp"/>
 
-    <!-- Search Patient Section -->
-    <EditText
-        android:id="@+id/searchPatient"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Search for a patient..."
-        android:drawableStart="@android:drawable/ic_menu_search"
-        android:padding="8dp"
-        android:background="@android:drawable/edit_text"
-        android:textSize="16sp"/>
-
     <!-- Calendar Picker -->
     <Button
         android:id="@+id/selectDateButton"
@@ -38,7 +27,9 @@
         android:text="Select Date"
         android:textColor="@android:color/white"
         android:padding="12dp"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="8dp"
+        app:background="@color/purple_500"/>
+
 
     <!-- Patients Visited on Selected Date -->
     <TextView
@@ -52,19 +43,19 @@
 
     <!-- Patient Count Statistics -->
     <TextView
-        android:id="@+id/todayPatientsCount"
+        android:id="@+id/monthPatientsCount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Total patients visited today: 0"
+        android:text="Total patients visited this month: 0"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginTop="16dp"/>
 
     <TextView
-        android:id="@+id/monthPatientsCount"
+        android:id="@+id/todayPatientsCount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Total patients visited this month: 0"
+        android:text="Total patients visited today: 0"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginTop="8dp"/>

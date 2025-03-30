@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -19,7 +18,6 @@ import java.util.List;
 
 public class StatisticsActivity extends AppCompatActivity {
 
-    private EditText searchPatient;
     private Button selectDateButton;
     private RecyclerView patientRecyclerView;
     private PatientAdapter patientAdapter;
@@ -32,7 +30,6 @@ public class StatisticsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_statistics);
 
-        searchPatient = findViewById(R.id.searchPatient);
         selectDateButton = findViewById(R.id.selectDateButton);
         patientRecyclerView = findViewById(R.id.patientRecyclerView);
         todayPatientsCount = findViewById(R.id.todayPatientsCount);
@@ -48,20 +45,6 @@ public class StatisticsActivity extends AppCompatActivity {
         // Update patient count on UI
         updatePatientCounts();
 
-        // Search Patient Feature
-        searchPatient.addTextChangedListener(new android.text.TextWatcher() {
-            @Override
-            public void afterTextChanged(android.text.Editable s) {
-                filterPatients(s.toString());
-            }
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-        });
-
         // Date Picker Feature
         selectDateButton.setOnClickListener(v -> showDatePickerDialog());
 
@@ -75,18 +58,8 @@ public class StatisticsActivity extends AppCompatActivity {
         int todayCount = databaseHelper.getPatientCountForToday();
         int monthCount = databaseHelper.getPatientCountForMonth();
 
-        todayPatientsCount.setText("Total patients visited today: " + todayCount);
         monthPatientsCount.setText("Total patients visited this month: " + monthCount);
-    }
-
-    private void filterPatients(String query) {
-        List<PatientModel> filteredList = new ArrayList<>();
-        for (PatientModel patient : patientList) {
-            if (patient.getName().toLowerCase().contains(query.toLowerCase())) {
-                filteredList.add(patient);
-            }
-        }
-        patientAdapter.updateList(filteredList);
+        todayPatientsCount.setText("Total patients visited today: " + todayCount);
     }
 
     private void showDatePickerDialog() {
