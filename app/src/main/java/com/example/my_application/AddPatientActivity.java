@@ -2,10 +2,13 @@ package com.example.my_application;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -16,24 +19,30 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Date;
 
 public class AddPatientActivity extends AppCompatActivity {
 
-    private static final int PICK_IMAGE_REQUEST = 1;
+    private static final int REQUEST_CAMERA = 1;
+    private static final int REQUEST_GALLERY = 2;
 
+    private Uri imageUri; // Store captured image URI
     private EditText editTextPatientName, editTextKnownDiagnosis, editTextCurrentDiagnosis;
     private Button buttonSave, captureUploadButton;
     private TextView textDate, textTime;
     private RecyclerView imageRecyclerView;
     private ImageAdapter imageAdapter;
-    private List<Uri> imageUris = new ArrayList<>();
+    private List<Uri> selectedImages = new ArrayList<>();
     private DatabaseHelper databaseHelper;
 
     @SuppressLint("MissingInflatedId")
@@ -49,10 +58,6 @@ public class AddPatientActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayShowTitleEnabled(true);
         }
 
-        if (captureUploadButton == null) {
-            Log.e("AddPatientActivity", "captureUploadButton is NULL!");
-        }
-
         // Initialize UI elements
         editTextPatientName = findViewById(R.id.editTextPatientName);
         editTextKnownDiagnosis = findViewById(R.id.editTextKnownDiagnosis);
@@ -66,7 +71,7 @@ public class AddPatientActivity extends AppCompatActivity {
         databaseHelper = new DatabaseHelper(this);
 
         // Set up RecyclerView for images
-        imageAdapter = new ImageAdapter(imageUris, this);
+        imageAdapter = new ImageAdapter(selectedImages, this);
         imageRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         imageRecyclerView.setAdapter(imageAdapter);
 
@@ -74,34 +79,80 @@ public class AddPatientActivity extends AppCompatActivity {
         setCurrentDateTime();
 
         // Handle image capture/upload
-        captureUploadButton.setOnClickListener(v -> openImagePicker());
+        captureUploadButton.setOnClickListener(v -> showImageSelectionDialog());
 
         // Handle save button click
         buttonSave.setOnClickListener(v -> savePatientData());
     }
 
-    private void openImagePicker() {
-        Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        pickPhoto.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // Allow multiple selection
-        startActivityForResult(pickPhoto, PICK_IMAGE_REQUEST);
+    private void showImageSelectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Choose an option")
+                .setItems(new String[]{"Capture Image", "Upload from Gallery"}, (dialog, which) -> {
+                    if (which == 0) {
+                        openCamera();
+                    } else {
+                        openGallery();
+                    }
+                })
+                .show();
+    }
+
+    // ✅ Modified openCamera() to Save Image to Storage
+    private void openCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+        File photoFile = createImageFile(); // Create a file to store the image
+        if (photoFile != null) {
+            imageUri = FileProvider.getUriForFile(this, "com.example.my_application.fileprovider", photoFile);
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+            startActivityForResult(intent, REQUEST_CAMERA);
+        }
+    }
+
+    private File createImageFile() {
+        try {
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String imageFileName = "IMG_" + timeStamp + "_";
+            File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            return File.createTempFile(imageFileName, ".jpg", storageDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true); // Allow multiple selection
+        startActivityForResult(Intent.createChooser(intent, "Select Pictures"), REQUEST_GALLERY);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
-            if (data.getClipData() != null) { // Multiple images selected
-                int count = data.getClipData().getItemCount();
-                for (int i = 0; i < count; i++) {
-                    Uri imageUri = data.getClipData().getItemAt(i).getUri();
-                    imageUris.add(imageUri);
+
+        if (resultCode == RESULT_OK) {
+            if (requestCode == REQUEST_CAMERA) {
+                if (imageUri != null) {
+                    selectedImages.add(imageUri); // Add captured image to the list
+                    imageAdapter.notifyDataSetChanged(); // ✅ Update RecyclerView
                 }
-            } else if (data.getData() != null) { // Single image selected
-                imageUris.add(data.getData());
+            } else if (requestCode == REQUEST_GALLERY && data != null) {
+                if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    for (int i = 0; i < count; i++) {
+                        selectedImages.add(data.getClipData().getItemAt(i).getUri());
+                    }
+                } else if (data.getData() != null) {
+                    selectedImages.add(data.getData());
+                }
+                imageAdapter.notifyDataSetChanged(); // ✅ Update RecyclerView
             }
-            imageAdapter.notifyDataSetChanged();
         }
     }
+
 
     private void savePatientData() {
         String patientName = editTextPatientName.getText().toString().trim();

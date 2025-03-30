@@ -5,18 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-<!--    &lt;!&ndash; Toolbar &ndash;&gt;-->
-<!--    <androidx.appcompat.widget.Toolbar-->
-<!--        android:id="@+id/toolbar"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:background="?attr/colorPrimary"-->
-<!--        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"-->
-<!--        android:elevation="4dp"-->
-<!--        app:title="Add Patient"-->
-<!--        app:titleTextColor="@android:color/white"-->
-<!--        android:gravity="center"-->
-<!--        app:layout_constraintTop_toTopOf="parent"/>-->
+
 
     <!-- Main Content -->
     <LinearLayout
@@ -36,7 +25,7 @@
 
         <!-- Patient Name Input Field -->
         <EditText
-            android:id="@+id/patientNameEditText"
+            android:id="@+id/editTextPatientName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Patient Name"
@@ -54,7 +43,7 @@
 
         <!-- Known Diagnosis Input Field -->
         <EditText
-            android:id="@+id/knownDiagnosisEditText"
+            android:id="@+id/editTextKnownDiagnosis"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Known Diagnosis"
@@ -72,7 +61,7 @@
 
         <!-- Current Diagnosis Input Field -->
         <EditText
-            android:id="@+id/currentDiagnosisEditText"
+            android:id="@+id/editTextCurrentDiagnosis"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter Current Diagnosis"
