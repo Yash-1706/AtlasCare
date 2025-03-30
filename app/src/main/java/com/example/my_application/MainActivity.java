@@ -98,4 +98,12 @@ public class MainActivity extends AppCompatActivity {
         }
         patientAdapter.updateList(filteredList);
     }
+
+    @Override
+    public void onBackPressed() {
+        // Exit the app when the back button is pressed
+        super.onBackPressed();
+        finishAffinity(); // Closes all activities in the task
+    }
+
 }

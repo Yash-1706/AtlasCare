@@ -46,6 +46,11 @@ public class MainActivity extends AppCompatActivity {
         patientAdapter = new PatientAdapter(patientList);
         recyclerViewPatients.setAdapter(patientAdapter);
 
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("AtlasCare");
+        }
+
+
         // Search functionality
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
