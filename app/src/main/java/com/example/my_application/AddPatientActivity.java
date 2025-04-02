@@ -45,6 +45,8 @@ public class AddPatientActivity extends AppCompatActivity {
     private List<Uri> selectedImages = new ArrayList<>();
     private DatabaseHelper databaseHelper;
 
+    private int PERMISSION_REQUEST_CODE = 1;
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +59,8 @@ public class AddPatientActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(true);
         }
+
+        requestCameraAccess();
 
         // Initialize UI elements
         editTextPatientName = findViewById(R.id.editTextPatientName);
@@ -96,6 +100,15 @@ public class AddPatientActivity extends AppCompatActivity {
                     }
                 })
                 .show();
+    }
+
+    public void requestCameraAccess() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            requestPermissions(new String[]{android.Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE);
+        }
+        else{
+            openCamera();
+        }
     }
 
     // ✅ Modified openCamera() to Save Image to Storage
