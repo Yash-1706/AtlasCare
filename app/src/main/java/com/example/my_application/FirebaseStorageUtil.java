@@ -1,0 +1,111 @@
+package com.example.my_application;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.util.Base64;
+import android.util.Log;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.io.ByteArrayOutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+public class FirebaseStorageUtil {
+    private static final String TAG = "FirebaseStorageUtil";
+    
+    /**
+     * Upload a single image to Firebase Realtime Database as Base64 string
+     */
+    public static void uploadImageToDatabase(Context context, Bitmap bitmap, String patientId, int imageIndex, FirebaseCallback callback) {
+        try {
+            // Get Firebase Database reference
+            DatabaseReference databaseRef = FirebaseDatabase.getInstance().getReference();
+            DatabaseReference imagesRef = databaseRef.child("patient_images").child(patientId);
+            
+            // Create a unique image ID
+            String imageId = "image_" + imageIndex;
+            
+            // Resize and compress the bitmap
+            Bitmap resizedBitmap = resizeBitmap(bitmap, 500); // Max 500px dimension
+            String base64Image = bitmapToBase64(resizedBitmap);
+            
+            Log.d(TAG, "Uploading image to database: " + imageId);
+            
+            // Save the image data to Firebase Database
+            imagesRef.child(imageId).setValue(base64Image)
+                .addOnSuccessListener(aVoid -> {
+                    String imageUrl = "firebase://patient_images/" + patientId + "/" + imageId;
+                    Log.d(TAG, "Image uploaded successfully: " + imageUrl);
+                    callback.onSuccess(imageUrl);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to upload image: " + e.getMessage());
+                    callback.onFailure("Failed to upload image: " + e.getMessage());
+                });
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Exception during image upload: " + e.getMessage(), e);
+            callback.onFailure("Exception: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Resize a bitmap to have a maximum dimension of maxSize
+     */
+    private static Bitmap resizeBitmap(Bitmap bitmap, int maxSize) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        
+        if (width <= maxSize && height <= maxSize) {
+            return bitmap; // No need to resize
+        }
+        
+        float ratio = Math.min((float) maxSize / width, (float) maxSize / height);
+        int newWidth = Math.round(width * ratio);
+        int newHeight = Math.round(height * ratio);
+        
+        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+    }
+    
+    /**
+     * Convert a bitmap to Base64 string
+     */
+    private static String bitmapToBase64(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+        byte[] imageBytes = baos.toByteArray();
+        return Base64.encodeToString(imageBytes, Base64.DEFAULT);
+    }
+    
+    /**
+     * Upload a test image to verify Firebase Database is working
+     */
+    public static void uploadTestImage(Context context, FirebaseCallback callback) {
+        try {
+            // Create a simple bitmap (10x10 red square)
+            Bitmap testBitmap = Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
+            testBitmap.eraseColor(android.graphics.Color.RED);
+            
+            // Generate a test patient ID
+            String testPatientId = "test_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            
+            // Upload to database
+            uploadImageToDatabase(context, testBitmap, testPatientId, 0, callback);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating test image: " + e.getMessage(), e);
+            callback.onFailure("Error creating test image: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Callback interface for Firebase operations
+     */
+    public interface FirebaseCallback {
+        void onSuccess(String imageReference);
+        void onFailure(String error);
+    }
+}

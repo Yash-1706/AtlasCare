@@ -7,11 +7,16 @@
         android:required="false" />
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
+        android:name=".AtlasCareApplication"
         android:label="AtlasCare"
         android:allowBackup="true"
+        android:requestLegacyExternalStorage="true"
         android:theme="@style/Theme.MyApplication"
         tools:ignore="ExtraText">
 
@@ -26,6 +31,7 @@
 
         <activity android:name=".AddPatientActivity"/>
         <activity android:name=".StatisticsActivity"/>
+        <activity android:name=".PatientDetailActivity"/>
 
         <!-- Added FileProvider -->
         <provider

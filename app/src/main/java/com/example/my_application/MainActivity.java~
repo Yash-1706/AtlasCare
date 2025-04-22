@@ -39,9 +39,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Dummy data for patient list (Replace with real data later)
         patientList = new ArrayList<>();
-        patientList.add(new PatientModel("John Doe", "Diabetes", "High Blood Pressure"));
-        patientList.add(new PatientModel("Jane Smith", "Asthma", "Cold and Cough"));
-        patientList.add(new PatientModel("Mike Johnson", "Heart Disease", "Chest Pain"));
+        patientList.add(new PatientModel("John Doe", "Diabetes", "High Blood Pressure", "", ""));
+        patientList.add(new PatientModel("Jane Smith", "Asthma", "Cold and Cough", "", ""));
+        patientList.add(new PatientModel("Mike Johnson", "Heart Disease", "Chest Pain", "", ""));
 
         patientAdapter = new PatientAdapter(patientList);
         recyclerViewPatients.setAdapter(patientAdapter);
@@ -98,4 +98,12 @@ public class MainActivity extends AppCompatActivity {
         }
         patientAdapter.updateList(filteredList);
     }
+
+    @Override
+    public void onBackPressed() {
+        // Exit the app when the back button is pressed
+        super.onBackPressed();
+        finishAffinity(); // Closes all activities in the task
+    }
+
 }
