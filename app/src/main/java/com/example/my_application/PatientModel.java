@@ -10,6 +10,7 @@ public class PatientModel {
     private String currentDiagnosis;
     private String date;
     private String time;
+    private String firebaseKey;
     private List<String> imageUrls; // To store image references from Firebase Database
     private List<String> thumbnails; // To store direct thumbnail data
 
@@ -47,6 +48,9 @@ public class PatientModel {
 
     public String getTime() { return time; }
     public void setTime(String time) { this.time = time; }
+    
+    public String getFirebaseKey() { return firebaseKey; }
+    public void setFirebaseKey(String firebaseKey) { this.firebaseKey = firebaseKey; }
     
     public List<String> getImageUrls() { return imageUrls; }
     public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }

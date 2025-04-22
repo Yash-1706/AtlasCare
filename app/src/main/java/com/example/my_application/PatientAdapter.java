@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.ImageButton;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
@@ -73,6 +74,13 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientV
             
             context.startActivity(intent);
         });
+        
+        // Set delete button listener
+        holder.btnDeletePatient.setOnClickListener(v -> {
+            if (deleteListener != null) {
+                deleteListener.onPatientDelete(patient, holder.getAdapterPosition());
+            }
+        });
     }
 
     @Override
@@ -127,16 +135,29 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientV
         notifyDataSetChanged();
     }
 
+    // Add interface for delete callback
+    public interface OnPatientDeleteListener {
+        void onPatientDelete(PatientModel patient, int position);
+    }
+
+    private OnPatientDeleteListener deleteListener;
+
+    public void setOnPatientDeleteListener(OnPatientDeleteListener listener) {
+        this.deleteListener = listener;
+    }
+
     static class PatientViewHolder extends RecyclerView.ViewHolder {
         TextView textName;
         TextView textKnownDiagnosis;
         TextView textCurrentDiagnosis;
+        ImageButton btnDeletePatient;
 
         public PatientViewHolder(View itemView) {
             super(itemView);
             textName = itemView.findViewById(R.id.textName);
             textKnownDiagnosis = itemView.findViewById(R.id.textKnownDiagnosis);
             textCurrentDiagnosis = itemView.findViewById(R.id.textCurrentDiagnosis);
+            btnDeletePatient = itemView.findViewById(R.id.btnDeletePatient);
         }
     }
 }

@@ -70,6 +70,45 @@ public class MainActivity extends AppCompatActivity {
         PatientAdapter adapter = new PatientAdapter(patientList);
         recyclerViewPatients.setAdapter(adapter);
 
+        // Set up delete listener for patient adapter
+        adapter.setOnPatientDeleteListener(new PatientAdapter.OnPatientDeleteListener() {
+            @Override
+            public void onPatientDelete(PatientModel patient, int position) {
+                // Show confirmation dialog
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Delete Patient")
+                        .setMessage("Are you sure you want to delete this patient?")
+                        .setPositiveButton("Yes", (dialog, which) -> {
+                            // Find patient ID (assuming PatientModel has a getId or similar method)
+                            String patientId = patient.getId();
+                            if (patientId == null || patientId.isEmpty()) {
+                                Toast.makeText(MainActivity.this, "Cannot delete: Patient ID not found!", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            ProgressDialog progressDialog = new ProgressDialog(MainActivity.this);
+                            progressDialog.setMessage("Deleting patient...");
+                            progressDialog.setCancelable(false);
+                            progressDialog.show();
+                            firebaseHandler.deletePatientById(patientId, new FirebaseHandler.FirebaseCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    progressDialog.dismiss();
+                                    Toast.makeText(MainActivity.this, "Patient deleted successfully", Toast.LENGTH_SHORT).show();
+                                    // Reload patients from Firebase
+                                    loadPatientsFromFirebase(adapter, adapter.getOriginalList());
+                                }
+                                @Override
+                                public void onFailure(String error) {
+                                    progressDialog.dismiss();
+                                    Toast.makeText(MainActivity.this, "Failed to delete: " + error, Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        })
+                        .setNegativeButton("No", null)
+                        .show();
+            }
+        });
+
         // Set up search functionality
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -135,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
         // Create network callback
         networkCallback = new ConnectivityManager.NetworkCallback() {
             @Override
-            onAvailable(@NonNull Network network) {
+            public void onAvailable(@NonNull Network network) {
                 super.onAvailable(network);
                 // Run on UI thread since callback might be called from a different thread
                 runOnUiThread(() -> {

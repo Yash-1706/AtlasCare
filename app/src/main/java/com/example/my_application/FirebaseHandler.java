@@ -91,6 +91,7 @@ public class FirebaseHandler {
                         try {
                             PatientModel patient = snapshot.getValue(PatientModel.class);
                             if (patient != null) {
+                                patient.setFirebaseKey(snapshot.getKey());
                                 patients.add(patient);
                                 Log.d(TAG, "Retrieved patient: " + patient.getName());
                                 
@@ -292,6 +293,36 @@ public class FirebaseHandler {
             }
         } catch (Exception e) {
             Log.e(TAG, "Exception adding patient to Firebase: " + e.getMessage());
+            e.printStackTrace();
+            callback.onFailure("Exception: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Delete a patient from Firebase by patient ID
+     */
+    public void deletePatientById(String patientId, final FirebaseCallback callback) {
+        try {
+            Log.d(TAG, "Attempting to delete patient from Firebase: " + patientId);
+            final Handler timeoutHandler = new Handler();
+            final Runnable timeoutRunnable = () -> {
+                Log.e(TAG, "Firebase delete operation timed out after " + TIMEOUT_SECONDS + " seconds");
+                callback.onFailure("Delete operation timed out. Check your internet connection.");
+            };
+            timeoutHandler.postDelayed(timeoutRunnable, TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+            databaseRef.child(patientId).removeValue()
+                    .addOnSuccessListener(unused -> {
+                        timeoutHandler.removeCallbacks(timeoutRunnable);
+                        Log.d(TAG, "Successfully deleted patient from Firebase");
+                        callback.onSuccess();
+                    })
+                    .addOnFailureListener(e -> {
+                        timeoutHandler.removeCallbacks(timeoutRunnable);
+                        Log.e(TAG, "Failed to delete patient from Firebase: " + e.getMessage());
+                        callback.onFailure("Error: " + e.getMessage());
+                    });
+        } catch (Exception e) {
+            Log.e(TAG, "Exception deleting patient from Firebase: " + e.getMessage());
             e.printStackTrace();
             callback.onFailure("Exception: " + e.getMessage());
         }
