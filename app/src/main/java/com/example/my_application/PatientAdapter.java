@@ -118,6 +118,15 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientV
         return originalList;
     }
 
+    // Method to keep originalList and patientList in sync
+    public void setPatients(List<PatientModel> newList) {
+        patientList.clear();
+        patientList.addAll(newList);
+        originalList.clear();
+        originalList.addAll(newList);
+        notifyDataSetChanged();
+    }
+
     static class PatientViewHolder extends RecyclerView.ViewHolder {
         TextView textName;
         TextView textKnownDiagnosis;

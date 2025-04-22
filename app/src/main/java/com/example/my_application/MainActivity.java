@@ -74,15 +74,21 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // Handle search submission
                 adapter.filter(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                // Handle search text changes
                 adapter.filter(newText);
+                return true;
+            }
+        });
+        // Prevent double population by suppressing default SearchView close behavior
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                // Do nothing, let onQueryTextChange handle restoring the list
                 return true;
             }
         });
@@ -233,8 +239,7 @@ public class MainActivity extends AppCompatActivity {
                 if (patients.isEmpty()) {
                     Toast.makeText(MainActivity.this, "No patients found", Toast.LENGTH_SHORT).show();
                 } else {
-                    patientList.addAll(patients);
-                    adapter.notifyDataSetChanged();
+                    adapter.setPatients(patients);
                     // Only show toast on first load or if explicitly refreshing
                     if (progressDialog.isShowing()) {
                         Toast.makeText(MainActivity.this, patients.size() + " patients loaded", Toast.LENGTH_SHORT).show();
