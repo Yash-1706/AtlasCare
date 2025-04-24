@@ -1,18 +1,24 @@
 package com.example.my_application;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -24,11 +30,14 @@ public class PatientDetailActivity extends AppCompatActivity {
 
     private static final String TAG = "PatientDetailActivity";
     private TextView tvName, tvKnownDiagnosis, tvCurrentDiagnosis, tvDate, tvTime;
-    private RecyclerView rvImages;
+    private RecyclerView rvImages, rvVisits;
     private PatientImageAdapter imageAdapter;
+    private VisitAdapter visitAdapter;
     private String patientName, knownDiagnosis, currentDiagnosis, date, time;
     private ArrayList<String> imageUrls = new ArrayList<>();
     private ArrayList<String> thumbnails = new ArrayList<>();
+    private ArrayList<VisitModel> visits = new ArrayList<>();
+    private Button btnAddVisit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +59,8 @@ public class PatientDetailActivity extends AppCompatActivity {
         tvDate = findViewById(R.id.tvDate);
         tvTime = findViewById(R.id.tvTime);
         rvImages = findViewById(R.id.rvImages);
+        rvVisits = findViewById(R.id.rvVisits);
+        btnAddVisit = findViewById(R.id.btnAddVisit);
 
         // Get data from intent
         Intent intent = getIntent();
@@ -82,6 +93,14 @@ public class PatientDetailActivity extends AppCompatActivity {
 
             // Setup images recycler view
             setupImagesRecyclerView();
+
+            // Setup visits recycler view
+            rvVisits.setLayoutManager(new LinearLayoutManager(this));
+            visitAdapter = new VisitAdapter(visits);
+            rvVisits.setAdapter(visitAdapter);
+
+            // Add visit button click listener
+            btnAddVisit.setOnClickListener(v -> showAddVisitDialog());
         }
     }
 
@@ -134,6 +153,54 @@ public class PatientDetailActivity extends AppCompatActivity {
         findViewById(R.id.tvNoImages).setVisibility(View.VISIBLE);
         rvImages.setVisibility(View.GONE);
         Log.d(TAG, "No images found for patient: " + patientName);
+    }
+
+    private void showAddVisitDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_visit, null);
+        builder.setView(dialogView);
+
+        EditText etCurrentDiagnosis = dialogView.findViewById(R.id.etCurrentDiagnosis);
+        TextView tvVisitDate = dialogView.findViewById(R.id.tvVisitDate);
+        TextView tvVisitTime = dialogView.findViewById(R.id.tvVisitTime);
+        Button btnAddPrescriptionImages = dialogView.findViewById(R.id.btnAddPrescriptionImages);
+        RecyclerView rvPrescriptionImages = dialogView.findViewById(R.id.rvPrescriptionImages);
+
+        // Set current date and time
+        java.util.Date now = new java.util.Date();
+        String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(now);
+        String time = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(now);
+        tvVisitDate.setText(date);
+        tvVisitTime.setText(time);
+
+        // TODO: Add logic for prescription images (use existing image picker logic if available)
+        // For now, just setup empty image adapter
+        ArrayList<String> imageUrls = new ArrayList<>();
+        PatientImageAdapter imageAdapter = new PatientImageAdapter(imageUrls, this);
+        rvPrescriptionImages.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        rvPrescriptionImages.setAdapter(imageAdapter);
+        btnAddPrescriptionImages.setOnClickListener(v -> {
+            // TODO: Launch image picker and add images to imageUrls, then notify imageAdapter
+        });
+
+        builder.setTitle("Add Visit");
+        builder.setPositiveButton("Save", (dialog, which) -> {
+            String diagnosis = etCurrentDiagnosis.getText().toString().trim();
+            if (TextUtils.isEmpty(diagnosis)) {
+                Toast.makeText(this, "Diagnosis cannot be empty", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            VisitModel visit = new VisitModel();
+            visit.setDiagnosis(diagnosis);
+            visit.setDate(date);
+            visit.setTime(time);
+            visit.setImageUrls(new ArrayList<>(imageUrls));
+            visits.add(visit);
+            visitAdapter.notifyItemInserted(visits.size() - 1);
+            // TODO: Save visit to Firebase under this patient
+        });
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
     }
 
     @Override

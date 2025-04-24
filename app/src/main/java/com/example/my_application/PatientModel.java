@@ -13,11 +13,13 @@ public class PatientModel {
     private String firebaseKey;
     private List<String> imageUrls; // To store image references from Firebase Database
     private List<String> thumbnails; // To store direct thumbnail data
+    private List<VisitModel> visits;
 
     public PatientModel() {
         // Initialize imageUrls to prevent null pointer exceptions
         this.imageUrls = new ArrayList<>();
         this.thumbnails = new ArrayList<>();
+        this.visits = new ArrayList<>();
     }  // Required for Firebase
 
     public PatientModel(String name, String knownDiagnosis, String currentDiagnosis, String date, String time) {
@@ -28,6 +30,7 @@ public class PatientModel {
         this.time = time;
         this.imageUrls = new ArrayList<>();
         this.thumbnails = new ArrayList<>();
+        this.visits = new ArrayList<>();
     }
 
     // Getters & setters (required by Firebase)
@@ -73,4 +76,7 @@ public class PatientModel {
         }
         this.thumbnails.add(thumbnail);
     }
+
+    public List<VisitModel> getVisits() { return visits; }
+    public void setVisits(List<VisitModel> visits) { this.visits = visits; }
 }

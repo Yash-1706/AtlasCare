@@ -67,6 +67,28 @@
                 android:layout_marginBottom="16dp"
                 tools:text="Time: 09:00 PM" />
 
+            <Button
+                android:id="@+id/btnAddVisit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Add Visit"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Visits"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvVisits"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:layout_marginBottom="16dp" />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
