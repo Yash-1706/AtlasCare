@@ -100,7 +100,6 @@ public class StatisticsActivity extends AppCompatActivity {
                 } else {
                     Log.d(TAG, "No patients found in Firebase");
                     clearStatistics();
-                    Toast.makeText(StatisticsActivity.this, "No patients found in cloud", Toast.LENGTH_SHORT).show();
                 }
                 
                 // Always notify adapter to refresh the view

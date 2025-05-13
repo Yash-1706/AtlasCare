@@ -9,18 +9,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 
@@ -28,10 +25,12 @@ public class PatientImageAdapter extends RecyclerView.Adapter<PatientImageAdapte
 
     private static final String TAG = "PatientImageAdapter";
     private List<String> imageUrls;
+    private List<String> fullImageUrls;
     private Context context;
 
-    public PatientImageAdapter(List<String> imageUrls, Context context) {
+    public PatientImageAdapter(List<String> imageUrls, List<String> fullImageUrls, Context context) {
         this.imageUrls = imageUrls;
+        this.fullImageUrls = fullImageUrls;
         this.context = context;
     }
 
@@ -57,99 +56,43 @@ public class PatientImageAdapter extends RecyclerView.Adapter<PatientImageAdapte
             return;
         }
         
-        // Check if it's a direct Base64 image
-        if (imageUrl.startsWith("data:image/")) {
+        // Only use Glide for Drive links (not base64)
+        if (imageUrl != null && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))) {
+            Glide.with(context)
+                .load(imageUrl)
+                .into(holder.patientImage);
+            holder.patientImage.setVisibility(View.VISIBLE);
+            holder.progressBar.setVisibility(View.GONE);
+        } else if (imageUrl != null && imageUrl.startsWith("data:image/")) {
             try {
                 // Parse the Base64 data
                 String base64Data = imageUrl.substring(imageUrl.indexOf(",") + 1);
-                Log.d(TAG, "Processing direct Base64 image, length: " + base64Data.length());
-                
                 // Convert Base64 to Bitmap
-                Bitmap bitmap = base64ToBitmap(base64Data);
+                byte[] decodedBytes = Base64.decode(base64Data, Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
                 if (bitmap != null) {
-                    // Load the bitmap into the ImageView
                     holder.patientImage.setImageBitmap(bitmap);
                     holder.patientImage.setVisibility(View.VISIBLE);
                     holder.progressBar.setVisibility(View.GONE);
-                    Log.d(TAG, "Successfully loaded direct Base64 image");
                 } else {
-                    // Show error image
                     showErrorImage(holder);
-                    Log.e(TAG, "Failed to decode direct Base64 image");
                 }
             } catch (Exception e) {
                 showErrorImage(holder);
-                Log.e(TAG, "Error processing direct Base64 image: " + e.getMessage());
             }
-        }
-        // Check if it's a Firebase Database reference
-        else if (imageUrl.startsWith("firebase://")) {
-            // Parse the path from the custom URL
-            // Format is: firebase://patient_images/PATIENT_ID/image_INDEX
-            String path = imageUrl.substring("firebase://".length());
-            Log.d(TAG, "Firebase path: " + path);
-            
-            // Get the image from Firebase Database
-            DatabaseReference imageRef = FirebaseDatabase.getInstance().getReference().child(path);
-            Log.d(TAG, "Attempting to load from database reference: " + imageRef.toString());
-            
-            imageRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    Log.d(TAG, "Database snapshot exists: " + snapshot.exists());
-                    if (snapshot.exists()) {
-                        String base64Image = snapshot.getValue(String.class);
-                        Log.d(TAG, "Base64 image data length: " + (base64Image != null ? base64Image.length() : 0));
-                        if (base64Image != null && !base64Image.isEmpty()) {
-                            // Convert Base64 to Bitmap
-                            Bitmap bitmap = base64ToBitmap(base64Image);
-                            if (bitmap != null) {
-                                Log.d(TAG, "Successfully decoded bitmap: " + bitmap.getWidth() + "x" + bitmap.getHeight());
-                                // Load the bitmap into the ImageView
-                                holder.patientImage.setImageBitmap(bitmap);
-                                holder.patientImage.setVisibility(View.VISIBLE);
-                                holder.progressBar.setVisibility(View.GONE);
-                                Log.d(TAG, "Successfully loaded image from Firebase");
-                            } else {
-                                // Show error image
-                                showErrorImage(holder);
-                                Log.e(TAG, "Failed to decode Base64 image");
-                            }
-                        } else {
-                            // Show error image
-                            showErrorImage(holder);
-                            Log.e(TAG, "Empty Base64 image data");
-                        }
-                    } else {
-                        // Show error image
-                        showErrorImage(holder);
-                        Log.e(TAG, "Image not found in database: " + path);
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    // Show error image
-                    showErrorImage(holder);
-                    Log.e(TAG, "Database error: " + error.getMessage());
-                }
-            });
         } else {
-            // Regular URL, use Glide
-            Log.d(TAG, "Using Glide to load regular URL");
-            Glide.with(context)
-                    .load(imageUrl)
-                    .placeholder(R.drawable.ic_launcher_foreground) // Use a placeholder while loading
-                    .error(R.drawable.ic_launcher_background) // Use an error image if loading fails
-                    .into(holder.patientImage);
-            holder.patientImage.setVisibility(View.VISIBLE);
-            holder.progressBar.setVisibility(View.GONE);
+            showErrorImage(holder);
         }
         
         // Set click listener to show full-screen image
         holder.patientImage.setOnClickListener(v -> {
-            Toast.makeText(context, "Image " + (position + 1), Toast.LENGTH_SHORT).show();
-            // Could implement a full-screen image viewer here
+            if (fullImageUrls != null && position < fullImageUrls.size()) {
+                String fullImage = fullImageUrls.get(position);
+                // Show full image in dialog
+                showFullImageDialog(fullImage);
+            } else {
+                Toast.makeText(context, "Full image not available", Toast.LENGTH_SHORT).show();
+            }
         });
     }
     
@@ -159,9 +102,28 @@ public class PatientImageAdapter extends RecyclerView.Adapter<PatientImageAdapte
         holder.progressBar.setVisibility(View.GONE);
     }
 
+    private void showFullImageDialog(String base64Image) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_full_image, null);
+        ImageView imageView = dialogView.findViewById(R.id.fullImageView);
+        ImageButton btnBack = dialogView.findViewById(R.id.btnBack);
+        Bitmap bitmap = base64ToBitmap(base64Image);
+        if (bitmap != null) {
+            imageView.setImageBitmap(bitmap);
+        } else {
+            imageView.setImageResource(R.drawable.ic_launcher_background);
+        }
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+        btnBack.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
     private Bitmap base64ToBitmap(String base64Image) {
         try {
-            byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
+            // Parse the Base64 data
+            String base64Data = base64Image.substring(base64Image.indexOf(",") + 1);
+            byte[] decodedBytes = Base64.decode(base64Data, Base64.DEFAULT);
             return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
         } catch (Exception e) {
             Log.e(TAG, "Error decoding Base64 image: " + e.getMessage());

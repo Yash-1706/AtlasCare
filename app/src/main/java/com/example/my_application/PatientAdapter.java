@@ -7,8 +7,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.bumptech.glide.Glide;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +53,17 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientV
             holder.textCurrentDiagnosis.setVisibility(View.VISIBLE);
         } else {
             holder.textCurrentDiagnosis.setVisibility(View.GONE);
+        }
+        
+        // Load the first image as thumbnail if available
+        if (patient.getImageUrls() != null && !patient.getImageUrls().isEmpty() && isValidUrl(patient.getImageUrls().get(0))) {
+            String imageUrl = patient.getImageUrls().get(0);
+            Glide.with(context)
+                .load(imageUrl)
+                .into(holder.imagePatientThumbnail);
+            holder.imagePatientThumbnail.setVisibility(View.VISIBLE);
+        } else {
+            holder.imagePatientThumbnail.setVisibility(View.GONE);
         }
         
         // Set click listener to open patient details
@@ -146,18 +159,21 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientV
         this.deleteListener = listener;
     }
 
-    static class PatientViewHolder extends RecyclerView.ViewHolder {
-        TextView textName;
-        TextView textKnownDiagnosis;
-        TextView textCurrentDiagnosis;
+    public static class PatientViewHolder extends RecyclerView.ViewHolder {
+        TextView textName, textKnownDiagnosis, textCurrentDiagnosis;
         ImageButton btnDeletePatient;
-
-        public PatientViewHolder(View itemView) {
+        ImageView imagePatientThumbnail;
+        public PatientViewHolder(@NonNull View itemView) {
             super(itemView);
             textName = itemView.findViewById(R.id.textName);
             textKnownDiagnosis = itemView.findViewById(R.id.textKnownDiagnosis);
             textCurrentDiagnosis = itemView.findViewById(R.id.textCurrentDiagnosis);
             btnDeletePatient = itemView.findViewById(R.id.btnDeletePatient);
+            imagePatientThumbnail = itemView.findViewById(R.id.imagePatientThumbnail);
         }
+    }
+
+    private boolean isValidUrl(String url) {
+        return url != null && (url.startsWith("http://") || url.startsWith("https://"));
     }
 }

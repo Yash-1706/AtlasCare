@@ -15,7 +15,6 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,10 +25,9 @@ import androidx.annotation.NonNull;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -39,12 +37,12 @@ public class MainActivity extends AppCompatActivity {
     private SearchView searchView;
     private BottomNavigationView bottomNavigationView;
     private FloatingActionButton fabAddPatient;
-    private FirebaseHandler firebaseHandler;
     private TextView tvConnectionStatus;
     private ConnectivityManager.NetworkCallback networkCallback;
     private ConnectivityManager connectivityManager;
     private boolean isConnected = true;
     private boolean isFirstLoad = true;
+    private boolean showPatientsLoadedToast = true;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -60,13 +58,13 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerViewPatients.setLayoutManager(new LinearLayoutManager(this));
 
-        // Initialize Firebase
-        firebaseHandler = new FirebaseHandler();
-
-        // Initialize the list of patients
+        // Fetch patients from Room DB
+        List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatients();
         List<PatientModel> patientList = new ArrayList<>();
+        for (PatientEntity entity : patientEntities) {
+            patientList.add(entityToModel(entity));
+        }
 
-        // Create an adapter and set it to the RecyclerView
         PatientAdapter adapter = new PatientAdapter(patientList);
         recyclerViewPatients.setAdapter(adapter);
 
@@ -79,30 +77,10 @@ public class MainActivity extends AppCompatActivity {
                         .setTitle("Delete Patient")
                         .setMessage("Are you sure you want to delete this patient?")
                         .setPositiveButton("Yes", (dialog, which) -> {
-                            // Find patient ID (assuming PatientModel has a getId or similar method)
-                            String patientId = patient.getFirebaseKey();
-                            if (patientId == null || patientId.isEmpty()) {
-                                Toast.makeText(MainActivity.this, "Cannot delete: Patient ID not found!", Toast.LENGTH_SHORT).show();
-                                return;
-                            }
-                            ProgressDialog progressDialog = new ProgressDialog(MainActivity.this);
-                            progressDialog.setMessage("Deleting patient...");
-                            progressDialog.setCancelable(false);
-                            progressDialog.show();
-                            firebaseHandler.deletePatientById(patientId, new FirebaseHandler.FirebaseCallback() {
-                                @Override
-                                public void onSuccess() {
-                                    progressDialog.dismiss();
-                                    Toast.makeText(MainActivity.this, "Patient deleted successfully", Toast.LENGTH_SHORT).show();
-                                    // Reload patients from Firebase
-                                    loadPatientsFromFirebase(adapter, adapter.getOriginalList());
-                                }
-                                @Override
-                                public void onFailure(String error) {
-                                    progressDialog.dismiss();
-                                    Toast.makeText(MainActivity.this, "Failed to delete: " + error, Toast.LENGTH_LONG).show();
-                                }
-                            });
+                            // Delete from DB
+                            PatientEntity entity = modelToEntity(patient);
+                            AppDatabase.getInstance(MainActivity.this).patientDao().deletePatient(entity);
+                            loadPatients(adapter);
                         })
                         .setNegativeButton("No", null)
                         .show();
@@ -150,11 +128,8 @@ public class MainActivity extends AppCompatActivity {
         // Set up network connectivity monitoring
         setupNetworkCallback();
 
-        // Load patients from Firebase
-        loadPatientsFromFirebase(adapter, patientList);
-
         // Set up FAB click listener
-        fabAddPatient.setOnClickListener(view -> {
+        fabAddPatient.setOnClickListener(v -> {
             if (!isConnected) {
                 Toast.makeText(MainActivity.this, "No internet connection. Cannot add patients offline.", Toast.LENGTH_LONG).show();
                 return;
@@ -162,6 +137,20 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, AddPatientActivity.class);
             startActivity(intent);
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        PatientAdapter adapter = (PatientAdapter) recyclerViewPatients.getAdapter();
+        if (adapter != null) {
+            List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatients();
+            List<PatientModel> updatedList = new ArrayList<>();
+            for (PatientEntity entity : patientEntities) {
+                updatedList.add(entityToModel(entity));
+            }
+            adapter.setPatients(updatedList);
+        }
     }
 
     private void setupNetworkCallback() {
@@ -180,12 +169,10 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     isConnected = true;
                     updateConnectionUI();
-                    Log.d(TAG, "Network connection available");
                     // Refresh data when connection is restored
                     PatientAdapter adapter = (PatientAdapter) recyclerViewPatients.getAdapter();
                     if (adapter != null) {
-                        List<PatientModel> patientList = adapter.getOriginalList();
-                        loadPatientsFromFirebase(adapter, patientList);
+                        loadPatients(adapter);
                     }
                 });
             }
@@ -196,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     isConnected = false;
                     updateConnectionUI();
-                    Log.d(TAG, "Network connection lost");
                 });
             }
         };
@@ -234,65 +220,44 @@ public class MainActivity extends AppCompatActivity {
             try {
                 connectivityManager.unregisterNetworkCallback(networkCallback);
             } catch (Exception e) {
-                Log.e(TAG, "Error unregistering network callback: " + e.getMessage());
-            }
-        }
-    }
-    
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Refresh the patient list when returning to the activity, but only if needed
-        PatientAdapter adapter = (PatientAdapter) recyclerViewPatients.getAdapter();
-        if (adapter != null) {
-            List<PatientModel> patientList = adapter.getOriginalList();
-            if (isFirstLoad || patientList.isEmpty()) {
-                loadPatientsFromFirebase(adapter, patientList);
-                isFirstLoad = false;
+                // Optionally, handle error silently
             }
         }
     }
 
-    private void loadPatientsFromFirebase(PatientAdapter adapter, List<PatientModel> patientList) {
-        // Don't attempt to load if there's no connection
+    private void loadPatients(PatientAdapter adapter) {
         if (!isConnected) {
             Toast.makeText(this, "No internet connection. Cannot load patients.", Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        // Show progress dialog
         ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading patients...");
         progressDialog.setCancelable(false);
         progressDialog.show();
+        List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatients();
+        List<PatientModel> patientList = new ArrayList<>();
+        for (PatientEntity entity : patientEntities) {
+            patientList.add(entityToModel(entity));
+        }
+        adapter.setPatients(patientList);
+        progressDialog.dismiss();
+    }
 
-        // Clear existing data
-        patientList.clear();
-        adapter.notifyDataSetChanged();
+    private PatientModel entityToModel(PatientEntity entity) {
+        PatientModel model = new PatientModel(entity.name, entity.knownDiagnosis, entity.currentDiagnosis, entity.date, entity.time);
+        model.setImageUrls(entity.imageUrls);
+        return model;
+    }
 
-        // Load patients from Firebase
-        firebaseHandler.getAllPatients(new FirebaseHandler.FirebaseDataCallback() {
-            @Override
-            public void onSuccess(List<PatientModel> patients) {
-                progressDialog.dismiss();
-                if (patients.isEmpty()) {
-                    Toast.makeText(MainActivity.this, "No patients found", Toast.LENGTH_SHORT).show();
-                } else {
-                    adapter.setPatients(patients);
-                    // Only show toast on first load or if explicitly refreshing
-                    if (progressDialog.isShowing()) {
-                        Toast.makeText(MainActivity.this, patients.size() + " patients loaded", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(String error) {
-                progressDialog.dismiss();
-                Toast.makeText(MainActivity.this, "Error: " + error, Toast.LENGTH_LONG).show();
-                Log.e(TAG, "Failed to load patients: " + error);
-            }
-        });
+    private PatientEntity modelToEntity(PatientModel model) {
+        PatientEntity entity = new PatientEntity();
+        entity.name = model.getName();
+        entity.knownDiagnosis = model.getKnownDiagnosis();
+        entity.currentDiagnosis = model.getCurrentDiagnosis();
+        entity.date = model.getDate();
+        entity.time = model.getTime();
+        entity.imageUrls = model.getImageUrls();
+        return entity;
     }
 
     @Override
@@ -334,28 +299,17 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Clear data from Firebase
-        firebaseHandler.clearAllData(new FirebaseHandler.FirebaseCallback() {
-            @Override
-            public void onSuccess() {
-                progressDialog.dismiss();
-                Toast.makeText(MainActivity.this, "All data cleared successfully", Toast.LENGTH_SHORT).show();
-                // Refresh the patient list
-                PatientAdapter adapter = (PatientAdapter) recyclerViewPatients.getAdapter();
-                if (adapter != null) {
-                    List<PatientModel> patientList = adapter.getOriginalList();
-                    patientList.clear();
-                    adapter.notifyDataSetChanged();
-                }
-            }
+        // Clear data from DB
+        AppDatabase.getInstance(this).patientDao().clearAllPatients();
 
-            @Override
-            public void onFailure(String error) {
-                progressDialog.dismiss();
-                Toast.makeText(MainActivity.this, "Error: " + error, Toast.LENGTH_LONG).show();
-                Log.e(TAG, "Failed to clear data: " + error);
-            }
-        });
+        // Refresh the patient list
+        PatientAdapter adapter = (PatientAdapter) recyclerViewPatients.getAdapter();
+        if (adapter != null) {
+            List<PatientModel> patientList = adapter.getOriginalList();
+            patientList.clear();
+            adapter.notifyDataSetChanged();
+        }
+        progressDialog.dismiss();
     }
 
     @Override
