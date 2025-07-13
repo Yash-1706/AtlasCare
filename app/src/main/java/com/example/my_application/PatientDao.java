@@ -23,4 +23,10 @@ public interface PatientDao {
 
     @Query("DELETE FROM patients")
     void clearAllPatients();
+
+    @Query("SELECT * FROM patients ORDER BY name COLLATE NOCASE ASC")
+    List<PatientEntity> getAllPatientsSorted();
+
+    @Query("DELETE FROM patients WHERE id = :patientId")
+    void deleteById(int patientId);
 }

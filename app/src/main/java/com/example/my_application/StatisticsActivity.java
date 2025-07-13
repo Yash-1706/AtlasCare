@@ -27,6 +27,7 @@ public class StatisticsActivity extends AppCompatActivity {
     private List<PatientModel> patientList = new ArrayList<>();
     private TextView todayPatientsCount, monthPatientsCount, selectedDatePatients;
     private FirebaseHandler firebaseHandler;
+    private BottomNavigationView bottomNavigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,9 +55,20 @@ public class StatisticsActivity extends AppCompatActivity {
         selectDateButton.setOnClickListener(v -> showDatePickerDialog());
 
         // Bottom Navigation Setup
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setSelectedItemId(R.id.nav_statistics);
-        bottomNavigationView.setOnNavigationItemSelectedListener(this::onNavigationItemSelected);
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.nav_home) {
+                startActivity(new Intent(this, MainActivity.class));
+                overridePendingTransition(0, 0);
+                finish();
+                return true;
+            } else if (item.getItemId() == R.id.nav_statistics) {
+                // Already here
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override
@@ -236,15 +248,5 @@ public class StatisticsActivity extends AppCompatActivity {
             e.printStackTrace();
             Toast.makeText(this, "Error filtering patients", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.nav_home) {
-            startActivity(new Intent(this, MainActivity.class));
-            return true;
-        } else if (item.getItemId() == R.id.nav_statistics) {
-            return true; // Already on this screen
-        }
-        return false;
     }
 }

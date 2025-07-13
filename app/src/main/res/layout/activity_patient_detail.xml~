@@ -30,9 +30,10 @@
                 android:id="@+id/tvPatientName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="24sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
-                android:layout_marginBottom="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="4dp"
                 tools:text="Patient Name" />
 
             <TextView
@@ -40,8 +41,41 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
-                android:layout_marginBottom="8dp"
-                tools:text="Known Diagnosis: Fever" />
+                android:layout_marginBottom="12dp"
+                tools:text="Known Diagnosis:" />
+
+            <Button
+                android:id="@+id/btnAddVisit"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:layout_marginLeft="24dp"
+                android:layout_marginRight="24dp"
+                android:backgroundTint="#7C4DFF"
+                android:textColor="#fff"
+                android:text="Add Visit"
+                android:textAllCaps="false"
+                android:layout_weight="1"
+                android:background="@drawable/material_shape_circle" />
+
+            <TextView
+                android:id="@+id/labelVisits"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Visits"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvVisits"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:layout_marginBottom="16dp" />
 
             <TextView
                 android:id="@+id/tvCurrentDiagnosis"
@@ -70,7 +104,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Images"
+                android:text="Prescription"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />

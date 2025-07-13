@@ -6,11 +6,12 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverters;
 
-@Database(entities = {PatientEntity.class}, version = 1)
+@Database(entities = {PatientEntity.class, VisitEntity.class}, version = 4)
 @TypeConverters({StringListConverter.class})
 public abstract class AppDatabase extends RoomDatabase {
     private static volatile AppDatabase INSTANCE;
     public abstract PatientDao patientDao();
+    public abstract VisitDao visitDao();
 
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
@@ -18,6 +19,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                             AppDatabase.class, "patient_db")
+                            .fallbackToDestructiveMigration()
                             .allowMainThreadQueries() // For demo only; use async in production
                             .build();
                 }

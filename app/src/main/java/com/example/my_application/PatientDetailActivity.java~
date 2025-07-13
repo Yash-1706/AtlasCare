@@ -1,14 +1,23 @@
 package com.example.my_application;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,35 +26,51 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class PatientDetailActivity extends AppCompatActivity {
 
     private static final String TAG = "PatientDetailActivity";
-    private TextView tvName, tvKnownDiagnosis, tvCurrentDiagnosis, tvDate, tvTime;
-    private RecyclerView rvImages, rvVisits;
-    private PatientImageAdapter imageAdapter;
+    private TextView tvName, tvKnownDiagnosis;
+    private RecyclerView rvVisits;
     private VisitAdapter visitAdapter;
-    private String patientName, knownDiagnosis, currentDiagnosis, date, time;
+    private String patientName, knownDiagnosis;
     private ArrayList<String> imageUrls = new ArrayList<>();
     private ArrayList<String> thumbnails = new ArrayList<>();
     private ArrayList<VisitModel> visits = new ArrayList<>();
     private Button btnAddVisit;
 
     private static final int PICK_IMAGES_REQUEST_CODE = 1010;
+    private static final int TAKE_PHOTO_REQUEST_CODE = 1011;
     private ArrayList<Uri> pendingImageUris = new ArrayList<>();
-    private GoogleSignInAccount googleSignInAccount;
-    private GoogleDriveUtil driveUtil;
-    private PatientImageAdapter tempImageAdapter;
-    private ArrayList<String> tempImageDriveLinks = new ArrayList<>();
 
+    private PatientEntity selectedPatient;
+
+    private static final int REQUEST_CAMERA_PERMISSION = 2001;
+    private Uri cameraPhotoUri;
+
+    private Button btnTakePrescriptionPhotoDialog; // Field for dialog camera button
+
+    private ArrayList<String> tempImageLocalPaths = new ArrayList<>();
+    private PatientImageAdapter tempImageAdapter;
+
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,21 +87,24 @@ public class PatientDetailActivity extends AppCompatActivity {
         // Initialize views
         tvName = findViewById(R.id.tvPatientName);
         tvKnownDiagnosis = findViewById(R.id.tvKnownDiagnosis);
-        tvCurrentDiagnosis = findViewById(R.id.tvCurrentDiagnosis);
-        tvDate = findViewById(R.id.tvDate);
-        tvTime = findViewById(R.id.tvTime);
-        rvImages = findViewById(R.id.rvImages);
         rvVisits = findViewById(R.id.rvVisits);
         btnAddVisit = findViewById(R.id.btnAddVisit);
+
+        // Setup visits recycler view and adapter early
+        visits = new ArrayList<>();
+        visitAdapter = new VisitAdapter(visits);
+        rvVisits.setLayoutManager(new LinearLayoutManager(this));
+        rvVisits.setAdapter(visitAdapter);
+
+        // Ensure Add Visit button is visible and works
+        btnAddVisit.setVisibility(View.VISIBLE);
+        btnAddVisit.setOnClickListener(v -> showAddVisitDialog());
 
         // Get data from intent
         Intent intent = getIntent();
         if (intent != null) {
             patientName = intent.getStringExtra("patientName");
             knownDiagnosis = intent.getStringExtra("knownDiagnosis");
-            currentDiagnosis = intent.getStringExtra("currentDiagnosis");
-            date = intent.getStringExtra("date");
-            time = intent.getStringExtra("time");
             
             // Get image URLs and thumbnails
             imageUrls = intent.getStringArrayListExtra("imageUrls");
@@ -94,78 +122,42 @@ public class PatientDetailActivity extends AppCompatActivity {
             // Set data to views
             tvName.setText(patientName);
             tvKnownDiagnosis.setText("Known Diagnosis: " + knownDiagnosis);
-            tvCurrentDiagnosis.setText("Current Diagnosis: " + currentDiagnosis);
-            tvDate.setText("Date: " + date);
-            tvTime.setText("Time: " + time);
 
-            // Setup images recycler view
-            setupImagesRecyclerView();
-
-            // Setup visits recycler view
-            rvVisits.setLayoutManager(new LinearLayoutManager(this));
-            visitAdapter = new VisitAdapter(visits);
-            rvVisits.setAdapter(visitAdapter);
-
-            // Add visit button click listener
-            btnAddVisit.setOnClickListener(v -> showAddVisitDialog());
-
-            // (Assume you already have GoogleSignInAccount from sign-in)
-            googleSignInAccount = GoogleSignIn.getLastSignedInAccount(this);
-            if (googleSignInAccount != null) {
-                driveUtil = new GoogleDriveUtil(this, googleSignInAccount);
-            }
-        }
-    }
-
-    private void setupImagesRecyclerView() {
-        // Check if we have thumbnails first
-        if (thumbnails != null && !thumbnails.isEmpty()) {
-            Log.d(TAG, "Using " + thumbnails.size() + " thumbnails for patient: " + patientName);
-            findViewById(R.id.tvNoImages).setVisibility(View.GONE);
-            rvImages.setVisibility(View.VISIBLE);
-            
-            // Create a list of image URLs with data:image/jpeg;base64 format
-            List<String> displayImages = new ArrayList<>();
-            for (String thumbnail : thumbnails) {
-                // Make sure the thumbnail has the proper prefix
-                if (!thumbnail.startsWith("data:image/")) {
-                    displayImages.add("data:image/jpeg;base64," + thumbnail);
-                } else {
-                    displayImages.add(thumbnail);
+            // Fetch visits for this patient from Room (by name)
+            AppDatabase db = AppDatabase.getInstance(this);
+            List<PatientEntity> allPatients = db.patientDao().getAllPatientsSorted();
+            selectedPatient = null;
+            for (PatientEntity entity : allPatients) {
+                if (entity.name.equalsIgnoreCase(patientName)) {
+                    selectedPatient = entity;
+                    Toast.makeText(this, "Selected patient: " + entity.name + ", ID: " + entity.id, Toast.LENGTH_LONG).show();
+                    Log.d("PatientDetailActivity", "Selected patient: " + entity.name + ", ID: " + entity.id);
+                    break;
                 }
             }
-            
-            // Log the first thumbnail for debugging
-            if (!displayImages.isEmpty()) {
-                String firstImage = displayImages.get(0);
-                Log.d(TAG, "First thumbnail starts with: " + firstImage.substring(0, Math.min(30, firstImage.length())));
+            if (selectedPatient == null) {
+                Toast.makeText(this, "Could not find patient entity in DB", Toast.LENGTH_LONG).show();
+                Log.e("PatientDetailActivity", "Could not find patient entity in DB");
             }
-            
-            imageAdapter = new PatientImageAdapter(displayImages, this);
-            rvImages.setLayoutManager(new GridLayoutManager(this, 2)); // 2 columns grid
-            rvImages.setAdapter(imageAdapter);
-            return;
-        }
-        
-        // Fall back to image URLs if no thumbnails
-        if (imageUrls != null && !imageUrls.isEmpty()) {
-            findViewById(R.id.tvNoImages).setVisibility(View.GONE);
-            rvImages.setVisibility(View.VISIBLE);
-            Log.d(TAG, "Found " + imageUrls.size() + " image URLs for patient: " + patientName);
-            for (int i = 0; i < imageUrls.size(); i++) {
-                Log.d(TAG, "Image " + i + ": " + imageUrls.get(i));
+            if (selectedPatient != null) {
+                List<VisitEntity> visitEntities = db.visitDao().getVisitsForPatient(selectedPatient.id);
+                visits.clear();
+                for (int i = 0; i < visitEntities.size(); i++) {
+                    VisitEntity ve = visitEntities.get(i);
+                    VisitModel vm = new VisitModel();
+                    vm.setDate(ve.date);
+                    vm.setDiagnosis(ve.notes != null ? ve.notes : "");
+                    vm.setTime(ve.time != null ? ve.time : "");
+                    // Always use prescriptionImageUrls if available, else fallback to imageUrls
+                    List<String> images = (ve.prescriptionImageUrls != null && !ve.prescriptionImageUrls.isEmpty())
+                        ? ve.prescriptionImageUrls
+                        : (ve.imageUrls != null ? ve.imageUrls : new ArrayList<>());
+                    vm.setImageUrls(new ArrayList<>(images));
+                    visits.add(vm);
+                }
+                visitAdapter.setVisitList(visits);
             }
-
-            imageAdapter = new PatientImageAdapter(imageUrls, this);
-            rvImages.setLayoutManager(new GridLayoutManager(this, 2)); // 2 columns grid
-            rvImages.setAdapter(imageAdapter);
-            return;
         }
-        
-        // No images available
-        findViewById(R.id.tvNoImages).setVisibility(View.VISIBLE);
-        rvImages.setVisibility(View.GONE);
-        Log.d(TAG, "No images found for patient: " + patientName);
     }
 
     private void showAddVisitDialog() {
@@ -177,21 +169,23 @@ public class PatientDetailActivity extends AppCompatActivity {
         TextView tvVisitDate = dialogView.findViewById(R.id.tvVisitDate);
         TextView tvVisitTime = dialogView.findViewById(R.id.tvVisitTime);
         Button btnAddPrescriptionImages = dialogView.findViewById(R.id.btnAddPrescriptionImages);
+        btnTakePrescriptionPhotoDialog = dialogView.findViewById(R.id.btnTakePrescriptionPhoto);
         RecyclerView rvPrescriptionImages = dialogView.findViewById(R.id.rvPrescriptionImages);
 
-        // Set current date and time
-        java.util.Date now = new java.util.Date();
-        String date = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(now);
-        String time = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(now);
+        Date now = new Date();
+        String date = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(now);
+        String time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now);
         tvVisitDate.setText(date);
         tvVisitTime.setText(time);
 
-        // TODO: Add logic for prescription images (use existing image picker logic if available)
-        // For now, just setup empty image adapter
-        ArrayList<String> imageUrls = new ArrayList<>();
-        tempImageAdapter = new PatientImageAdapter(imageUrls, this);
+        ArrayList<String> prescriptionImagePaths = new ArrayList<>();
+        tempImageAdapter = new PatientImageAdapter(prescriptionImagePaths, prescriptionImagePaths, this);
         rvPrescriptionImages.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         rvPrescriptionImages.setAdapter(tempImageAdapter);
+
+        final Button[] saveButtonRef = new Button[1];
+        tempImageLocalPaths = prescriptionImagePaths;
+
         btnAddPrescriptionImages.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("image/*");
@@ -199,67 +193,195 @@ public class PatientDetailActivity extends AppCompatActivity {
             startActivityForResult(Intent.createChooser(intent, "Select Images"), PICK_IMAGES_REQUEST_CODE);
         });
 
-        builder.setTitle("Add Visit");
-        builder.setPositiveButton("Save", (dialog, which) -> {
-            String diagnosis = etCurrentDiagnosis.getText().toString().trim();
-            if (TextUtils.isEmpty(diagnosis)) {
-                Toast.makeText(this, "Diagnosis cannot be empty", Toast.LENGTH_SHORT).show();
+        btnTakePrescriptionPhotoDialog.setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
                 return;
             }
-            VisitModel visit = new VisitModel();
-            visit.setDiagnosis(diagnosis);
-            visit.setDate(date);
-            visit.setTime(time);
-            visit.setImageUrls(new ArrayList<>(tempImageDriveLinks));
-            visits.add(visit);
-            visitAdapter.notifyItemInserted(visits.size() - 1);
-            // TODO: Save visit to Firebase under this patient
+            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                File photoFile = null;
+                try {
+                    photoFile = File.createTempFile("visit_img_", ".jpg", getExternalFilesDir(Environment.DIRECTORY_PICTURES));
+                } catch (Exception ex) {
+                    Toast.makeText(this, "Camera error: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+                if (photoFile != null) {
+                    cameraPhotoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPhotoUri);
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    startActivityForResult(takePictureIntent, TAKE_PHOTO_REQUEST_CODE);
+                }
+            }
         });
+
+        builder.setTitle("Add Visit");
+        builder.setPositiveButton("Save", null);
         builder.setNegativeButton("Cancel", null);
-        builder.show();
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(dlg -> {
+            Button saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            saveButtonRef[0] = saveButton;
+            saveButton.setEnabled(true);
+            saveButton.setOnClickListener(v -> {
+                String diagnosis = etCurrentDiagnosis.getText().toString().trim();
+                if (TextUtils.isEmpty(diagnosis)) {
+                    Toast.makeText(this, "Diagnosis cannot be empty", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                // Save visit to Room database
+                if (selectedPatient != null) {
+                    VisitEntity newVisit = new VisitEntity();
+                    newVisit.patientId = selectedPatient.id;
+                    newVisit.date = date;
+                    newVisit.notes = diagnosis;
+                    newVisit.time = time;
+                    newVisit.prescriptionImageUrls = new ArrayList<>(prescriptionImagePaths); // Store local file paths
+                    AppDatabase db = AppDatabase.getInstance(this);
+                    db.visitDao().insertVisit(newVisit);
+                    // Reload visits from DB
+                    List<VisitEntity> visitEntities = db.visitDao().getVisitsForPatient(selectedPatient.id);
+                    visits.clear();
+                    for (VisitEntity ve : visitEntities) {
+                        VisitModel vm = new VisitModel();
+                        vm.setDate(ve.date);
+                        vm.setDiagnosis(ve.notes != null ? ve.notes : "");
+                        vm.setTime(ve.time != null ? ve.time : "");
+                        List<String> images = (ve.prescriptionImageUrls != null && !ve.prescriptionImageUrls.isEmpty())
+                            ? ve.prescriptionImageUrls
+                            : (ve.imageUrls != null ? ve.imageUrls : new ArrayList<>());
+                        vm.setImageUrls(new ArrayList<>(images));
+                        visits.add(vm);
+                    }
+                    visitAdapter.setVisitList(visits);
+                    dialog.dismiss();
+                } else {
+                    Toast.makeText(this, "Patient not found. Cannot add visit.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+        dialog.show();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == PICK_IMAGES_REQUEST_CODE && resultCode == RESULT_OK) {
-            pendingImageUris.clear();
-            if (data.getClipData() != null) {
-                int count = data.getClipData().getItemCount();
-                for (int i = 0; i < count; i++) {
-                    Uri imageUri = data.getClipData().getItemAt(i).getUri();
-                    pendingImageUris.add(imageUri);
+            if (data != null) {
+                if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    for (int i = 0; i < count; i++) {
+                        Uri imageUri = data.getClipData().getItemAt(i).getUri();
+                        String localPath = copyUriToInternalStorage(imageUri);
+                        if (localPath != null) {
+                            tempImageLocalPaths.add(localPath);
+                        }
+                    }
+                } else if (data.getData() != null) {
+                    Uri imageUri = data.getData();
+                    String localPath = copyUriToInternalStorage(imageUri);
+                    if (localPath != null) {
+                        tempImageLocalPaths.add(localPath);
+                    }
                 }
-            } else if (data.getData() != null) {
-                pendingImageUris.add(data.getData());
+                if (tempImageAdapter != null) tempImageAdapter.notifyDataSetChanged();
             }
-            // Upload all selected images to Google Drive
-            uploadSelectedImagesToDrive();
+        } else if (requestCode == TAKE_PHOTO_REQUEST_CODE && resultCode == RESULT_OK) {
+            if (cameraPhotoUri != null) {
+                tempImageLocalPaths.add(cameraPhotoUri.getPath());
+                if (tempImageAdapter != null) tempImageAdapter.notifyDataSetChanged();
+                cameraPhotoUri = null;
+            }
         }
     }
 
-    private void uploadSelectedImagesToDrive() {
-        if (driveUtil == null) {
-            Toast.makeText(this, "Google Drive not initialized!", Toast.LENGTH_SHORT).show();
-            return;
+    // Helper to copy image from Uri to internal storage and return path
+    private String copyUriToInternalStorage(Uri uri) {
+        try {
+            InputStream is = getContentResolver().openInputStream(uri);
+            File outDir = new File(getFilesDir(), "visits");
+            if (!outDir.exists()) outDir.mkdirs();
+            String fileName = "visit_img_" + System.currentTimeMillis() + ".jpg";
+            File outFile = new File(outDir, fileName);
+            FileOutputStream fos = new FileOutputStream(outFile);
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = is.read(buffer)) > 0) fos.write(buffer, 0, len);
+            fos.close();
+            is.close();
+            return outFile.getAbsolutePath();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Failed to copy image", Toast.LENGTH_SHORT).show();
+            return null;
         }
-        tempImageDriveLinks.clear();
-        for (Uri uri : pendingImageUris) {
-            java.io.File file = FileUtil.getFileFromUri(this, uri);
-            if (file != null) {
-                driveUtil.uploadFile(file, "image/jpeg", new GoogleDriveUtil.DriveUploadCallback() {
-                    @Override
-                    public void onSuccess(String fileId, String webViewLink) {
-                        tempImageDriveLinks.add(webViewLink);
-                        tempImageAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            boolean granted = true;
+            boolean somePermanentlyDenied = false;
+            for (int i = 0; i < grantResults.length; i++) {
+                if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                    granted = false;
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[i])) {
+                        somePermanentlyDenied = true;
                     }
-                    @Override
-                    public void onFailure(Exception e) {
-                        Toast.makeText(PatientDetailActivity.this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+                }
+            }
+            if (granted && btnTakePrescriptionPhotoDialog != null) {
+                btnTakePrescriptionPhotoDialog.performClick();
+            } else if (somePermanentlyDenied) {
+                // Permission permanently denied, show dialog to go to settings
+                new AlertDialog.Builder(this)
+                        .setTitle("Permissions Required")
+                        .setMessage("Camera and storage permissions are permanently denied. Please enable them in app settings.")
+                        .setPositiveButton("Go to Settings", (dialog, which) -> {
+                            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                            intent.setData(Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            } else {
+                Toast.makeText(this, "Camera and storage permissions are required!", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_patient_detail, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_delete_patient) {
+            if (selectedPatient == null) {
+                Toast.makeText(this, "Patient not found in database", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            Toast.makeText(this, "Attempting to delete: " + selectedPatient.name + ", ID: " + selectedPatient.id, Toast.LENGTH_SHORT).show();
+            new AlertDialog.Builder(this)
+                .setTitle("Delete Patient")
+                .setMessage("Are you sure you want to delete this patient?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    AppDatabase db = AppDatabase.getInstance(this);
+                    int before = db.patientDao().getAllPatientsSorted().size();
+                    db.patientDao().deleteById(selectedPatient.id);
+                    int after = db.patientDao().getAllPatientsSorted().size();
+                    Toast.makeText(this, "Deleted by ID. Before: " + before + ", After: " + after, Toast.LENGTH_LONG).show();
+                    finish();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.example.my_application;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.io.File;
 import java.util.List;
 
 public class PatientImageAdapter extends RecyclerView.Adapter<PatientImageAdapter.ImageViewHolder> {
@@ -45,90 +47,100 @@ public class PatientImageAdapter extends RecyclerView.Adapter<PatientImageAdapte
     public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
         String imageUrl = imageUrls.get(position);
         Log.d(TAG, "Loading image at position " + position + ": " + (imageUrl != null ? imageUrl.substring(0, Math.min(50, imageUrl.length())) + "..." : "null"));
-        
-        // Show loading indicator
+
         holder.progressBar.setVisibility(View.VISIBLE);
         holder.patientImage.setVisibility(View.INVISIBLE);
-        
+
         if (imageUrl == null) {
             showErrorImage(holder);
             Log.e(TAG, "Null image URL at position " + position);
             return;
         }
-        
-        // Only use Glide for Drive links (not base64)
-        if (imageUrl != null && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))) {
-            Glide.with(context)
-                .load(imageUrl)
-                .into(holder.patientImage);
-            holder.patientImage.setVisibility(View.VISIBLE);
-            holder.progressBar.setVisibility(View.GONE);
-        } else if (imageUrl != null && imageUrl.startsWith("data:image/")) {
-            try {
-                // Parse the Base64 data
+
+        try {
+            File imgFile = new File(imageUrl);
+            if (imgFile.exists()) {
+                Log.d(TAG, "Attempting to load local file: " + imgFile.getAbsolutePath());
+                Glide.with(context)
+                    .load(Uri.fromFile(imgFile))
+                    .thumbnail(0.2f)
+                    .fitCenter()
+                    .dontAnimate()
+                    .placeholder(R.drawable.ic_image_placeholder)
+                    .error(R.drawable.ic_launcher_background)
+                    .into(holder.patientImage);
+                holder.progressBar.setVisibility(View.GONE);
+                holder.patientImage.setVisibility(View.VISIBLE);
+            } else if (imageUrl.startsWith("data:image/")) {
+                // Handle Base64 inline images if any
                 String base64Data = imageUrl.substring(imageUrl.indexOf(",") + 1);
-                // Convert Base64 to Bitmap
                 byte[] decodedBytes = Base64.decode(base64Data, Base64.DEFAULT);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
-                if (bitmap != null) {
-                    holder.patientImage.setImageBitmap(bitmap);
-                    holder.patientImage.setVisibility(View.VISIBLE);
-                    holder.progressBar.setVisibility(View.GONE);
-                } else {
-                    showErrorImage(holder);
-                }
-            } catch (Exception e) {
-                showErrorImage(holder);
-            }
-        } else {
-            showErrorImage(holder);
-        }
-        
-        // Set click listener to show full-screen image
-        holder.patientImage.setOnClickListener(v -> {
-            if (fullImageUrls != null && position < fullImageUrls.size()) {
-                String fullImage = fullImageUrls.get(position);
-                // Show full image in dialog
-                showFullImageDialog(fullImage);
+                holder.patientImage.setImageBitmap(BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length));
+                holder.progressBar.setVisibility(View.GONE);
+                holder.patientImage.setVisibility(View.VISIBLE);
             } else {
-                Toast.makeText(context, "Full image not available", Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "File does not exist: " + imageUrl);
+                Toast.makeText(context, "Image file not found: " + imageUrl, Toast.LENGTH_SHORT).show();
+                Glide.with(context)
+                    .load(imageUrl)
+                    .thumbnail(0.2f)
+                    .fitCenter()
+                    .dontAnimate()
+                    .placeholder(R.drawable.ic_image_placeholder)
+                    .error(R.drawable.ic_launcher_background)
+                    .into(holder.patientImage);
+                holder.progressBar.setVisibility(View.GONE);
+                holder.patientImage.setVisibility(View.VISIBLE);
             }
+        } catch (Exception e) {
+            showErrorImage(holder);
+            Log.e(TAG, "Error displaying image: " + e.getMessage());
+            Toast.makeText(context, "Error displaying image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
+        holder.patientImage.setOnClickListener(v -> {
+            String fullImagePath = imageUrls.get(position);
+            showFullImageDialog(fullImagePath);
         });
     }
-    
+
     private void showErrorImage(ImageViewHolder holder) {
         holder.patientImage.setImageResource(R.drawable.ic_launcher_background);
         holder.patientImage.setVisibility(View.VISIBLE);
         holder.progressBar.setVisibility(View.GONE);
     }
 
-    private void showFullImageDialog(String base64Image) {
+    // Show full-size image in a dialog from local file or URL
+    private void showFullImageDialog(String imagePath) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_full_image, null);
         ImageView imageView = dialogView.findViewById(R.id.fullImageView);
         ImageButton btnBack = dialogView.findViewById(R.id.btnBack);
-        Bitmap bitmap = base64ToBitmap(base64Image);
-        if (bitmap != null) {
-            imageView.setImageBitmap(bitmap);
-        } else {
-            imageView.setImageResource(R.drawable.ic_launcher_background);
-        }
         builder.setView(dialogView);
         AlertDialog dialog = builder.create();
+
+        File imgFile = new File(imagePath);
+        if (imgFile.exists()) {
+            Glide.with(context)
+                .load(Uri.fromFile(imgFile))
+                .fitCenter()
+                .into(imageView);
+        } else if (imagePath.startsWith("data:image/")) {
+            try {
+                String base64Data = imagePath.substring(imagePath.indexOf(",") + 1);
+                byte[] decodedBytes = Base64.decode(base64Data, Base64.DEFAULT);
+                imageView.setImageBitmap(BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length));
+            } catch (Exception e) {
+                imageView.setImageResource(R.drawable.ic_launcher_background);
+            }
+        } else {
+            Glide.with(context)
+                .load(imagePath)
+                .fitCenter()
+                .into(imageView);
+        }
         btnBack.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
-    }
-
-    private Bitmap base64ToBitmap(String base64Image) {
-        try {
-            // Parse the Base64 data
-            String base64Data = base64Image.substring(base64Image.indexOf(",") + 1);
-            byte[] decodedBytes = Base64.decode(base64Data, Base64.DEFAULT);
-            return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
-        } catch (Exception e) {
-            Log.e(TAG, "Error decoding Base64 image: " + e.getMessage());
-            return null;
-        }
     }
 
     @Override

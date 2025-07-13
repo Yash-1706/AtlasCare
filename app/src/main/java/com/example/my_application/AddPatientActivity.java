@@ -107,6 +107,28 @@ public class AddPatientActivity extends AppCompatActivity {
 
         // Handle save button click
         buttonSave.setOnClickListener(v -> savePatientData());
+
+        // Check if patient already exists (by name)
+        String patientName = getIntent().getStringExtra("patient_name");
+        if (patientName != null && !patientName.isEmpty()) {
+            // Find patient by name
+            PatientEntity patientEntity = null;
+            for (PatientEntity entity : AppDatabase.getInstance(this).patientDao().getAllPatientsSorted()) {
+                if (entity.name.equalsIgnoreCase(patientName)) {
+                    patientEntity = entity;
+                    break;
+                }
+            }
+            if (patientEntity != null) {
+                int visitCount = AppDatabase.getInstance(this).visitDao().getVisitCountForPatient(patientEntity.id);
+                if (visitCount >= 1) {
+                    // Hide known diagnosis for 2nd+ visit
+                    editTextKnownDiagnosis.setVisibility(View.GONE);
+                    TextView knownDiagnosisLabel = findViewById(R.id.labelKnownDiagnosis);
+                    if (knownDiagnosisLabel != null) knownDiagnosisLabel.setVisibility(View.GONE);
+                }
+            }
+        }
     }
 
     private void showImageSelectionDialog() {
@@ -247,7 +269,55 @@ public class AddPatientActivity extends AppCompatActivity {
         entity.date = patient.getDate();
         entity.time = patient.getTime();
         entity.imageUrls = fullImages;
-        AppDatabase.getInstance(this).patientDao().insertPatient(entity);
+        AppDatabase db = AppDatabase.getInstance(this);
+        // Insert patient if new (first visit)
+        PatientEntity existing = null;
+        for (PatientEntity e : db.patientDao().getAllPatientsSorted()) {
+            if (e.name.equalsIgnoreCase(entity.name)) {
+                existing = e;
+                break;
+            }
+        }
+        int patientId = -1;
+        if (existing == null) {
+            db.patientDao().insertPatient(entity);
+            // Get patientId of inserted patient
+            List<PatientEntity> all = db.patientDao().getAllPatientsSorted();
+            for (PatientEntity e : all) {
+                if (e.name.equalsIgnoreCase(entity.name)) {
+                    patientId = e.id;
+                    break;
+                }
+            }
+        } else {
+            patientId = existing.id;
+        }
+        // Add visit record
+        VisitEntity visit = new VisitEntity();
+        visit.patientId = patientId;
+        visit.date = patient.getDate();
+        visit.notes = patient.getCurrentDiagnosis(); // Store current diagnosis in visit notes
+
+        // Convert selected images to Base64 and add to visit
+        List<String> visitImages = new ArrayList<>();
+        for (Uri uri : selectedImages) {
+            try {
+                InputStream inputStream = getContentResolver().openInputStream(uri);
+                Bitmap fullBitmap = BitmapFactory.decodeStream(inputStream);
+                if (fullBitmap != null) {
+                    String fullBase64 = bitmapToBase64(fullBitmap, 90);
+                    if (!fullBase64.startsWith("data:image/")) {
+                        fullBase64 = "data:image/jpeg;base64," + fullBase64;
+                    }
+                    visitImages.add(fullBase64);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        visit.imageUrls = visitImages;
+
+        db.visitDao().insertVisit(visit);
         progressDialog.dismiss();
         finish();
     }

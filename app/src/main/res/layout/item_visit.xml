@@ -9,28 +9,84 @@
     android:layout_marginBottom="8dp">
 
     <TextView
-        android:id="@+id/tvVisitDate"
-        android:layout_width="match_parent"
+        android:id="@+id/tvVisitNumberLabel"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Visit Date"
+        android:text="1st visit"
         android:textStyle="bold"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:textColor="#222"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"/>
 
-    <TextView
-        android:id="@+id/tvVisitDiagnosis"
+    <LinearLayout
+        android:id="@+id/visitDetailsLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Diagnosis"
-        android:textSize="14sp"
-        android:layout_marginTop="4dp" />
+        android:orientation="vertical"
+        android:visibility="gone">
 
-    <TextView
-        android:id="@+id/tvVisitNotes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Notes"
-        android:textSize="13sp"
-        android:layout_marginTop="2dp" />
+        <TextView
+            android:id="@+id/tvVisitCurrentDiagnosisLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Current Diagnosis:"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:layout_marginTop="4dp"/>
+        <TextView
+            android:id="@+id/tvVisitDiagnosis"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:id="@+id/tvVisitDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:id="@+id/tvVisitTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:id="@+id/tvPrescriptionLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Prescription"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:layout_marginTop="4dp"/>
+        <FrameLayout
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:background="@android:color/transparent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:layout_gravity="center_horizontal">
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvVisitImages"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/white"
+                android:overScrollMode="never"/>
+            <TextView
+                android:id="@+id/tvPrescriptionPlaceholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="Place for\ndisplaying\nprescription\nimages"
+                android:textSize="15sp"
+                android:textColor="#888"
+                android:background="@android:color/transparent"/>
+        </FrameLayout>
+    </LinearLayout>
 
     <ImageButton
         android:id="@+id/btnEditVisit"

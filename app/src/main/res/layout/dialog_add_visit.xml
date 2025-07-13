@@ -50,12 +50,26 @@
             android:textStyle="italic"
             android:layout_marginBottom="8dp" />
 
-        <Button
-            android:id="@+id/btnAddPrescriptionImages"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add Prescription Images"
-            android:layout_marginTop="16dp" />
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
+
+            <Button
+                android:id="@+id/btnAddPrescriptionImages"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Add from Gallery" />
+
+            <Button
+                android:id="@+id/btnTakePrescriptionPhoto"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Take Photo" />
+        </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvPrescriptionImages"

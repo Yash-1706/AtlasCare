@@ -58,11 +58,19 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerViewPatients.setLayoutManager(new LinearLayoutManager(this));
 
-        // Fetch patients from Room DB
-        List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatients();
+        // Fetch patients from Room DB, sorted alphabetically
+        List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatientsSorted();
         List<PatientModel> patientList = new ArrayList<>();
         for (PatientEntity entity : patientEntities) {
-            patientList.add(entityToModel(entity));
+            PatientModel model = new PatientModel();
+            model.setId(entity.id);
+            model.setName(entity.name);
+            model.setKnownDiagnosis(entity.knownDiagnosis);
+            model.setCurrentDiagnosis(entity.currentDiagnosis);
+            model.setDate(entity.date);
+            model.setTime(entity.time);
+            model.setImageUrls(entity.imageUrls);
+            patientList.add(model);
         }
 
         PatientAdapter adapter = new PatientAdapter(patientList);
@@ -72,14 +80,18 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnPatientDeleteListener(new PatientAdapter.OnPatientDeleteListener() {
             @Override
             public void onPatientDelete(PatientModel patient, int position) {
-                // Show confirmation dialog
                 new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Delete Patient")
                         .setMessage("Are you sure you want to delete this patient?")
                         .setPositiveButton("Yes", (dialog, which) -> {
-                            // Delete from DB
-                            PatientEntity entity = modelToEntity(patient);
-                            AppDatabase.getInstance(MainActivity.this).patientDao().deletePatient(entity);
+                            // Delete from DB using ID for reliability
+                            AppDatabase db = AppDatabase.getInstance(MainActivity.this);
+                            if (patient.getId() > 0) {
+                                db.patientDao().deleteById(patient.getId());
+                            } else {
+                                PatientEntity entity = modelToEntity(patient);
+                                db.patientDao().deleteById(entity.id);
+                            }
                             loadPatients(adapter);
                         })
                         .setNegativeButton("No", null)
@@ -144,10 +156,18 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         PatientAdapter adapter = (PatientAdapter) recyclerViewPatients.getAdapter();
         if (adapter != null) {
-            List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatients();
+            List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatientsSorted();
             List<PatientModel> updatedList = new ArrayList<>();
             for (PatientEntity entity : patientEntities) {
-                updatedList.add(entityToModel(entity));
+                PatientModel model = new PatientModel();
+                model.setId(entity.id);
+                model.setName(entity.name);
+                model.setKnownDiagnosis(entity.knownDiagnosis);
+                model.setCurrentDiagnosis(entity.currentDiagnosis);
+                model.setDate(entity.date);
+                model.setTime(entity.time);
+                model.setImageUrls(entity.imageUrls);
+                updatedList.add(model);
             }
             adapter.setPatients(updatedList);
         }
@@ -234,23 +254,38 @@ public class MainActivity extends AppCompatActivity {
         progressDialog.setMessage("Loading patients...");
         progressDialog.setCancelable(false);
         progressDialog.show();
-        List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatients();
+        List<PatientEntity> patientEntities = AppDatabase.getInstance(this).patientDao().getAllPatientsSorted();
         List<PatientModel> patientList = new ArrayList<>();
         for (PatientEntity entity : patientEntities) {
-            patientList.add(entityToModel(entity));
+            PatientModel model = new PatientModel();
+            model.setId(entity.id);
+            model.setName(entity.name);
+            model.setKnownDiagnosis(entity.knownDiagnosis);
+            model.setCurrentDiagnosis(entity.currentDiagnosis);
+            model.setDate(entity.date);
+            model.setTime(entity.time);
+            model.setImageUrls(entity.imageUrls);
+            patientList.add(model);
         }
         adapter.setPatients(patientList);
         progressDialog.dismiss();
     }
 
     private PatientModel entityToModel(PatientEntity entity) {
-        PatientModel model = new PatientModel(entity.name, entity.knownDiagnosis, entity.currentDiagnosis, entity.date, entity.time);
+        PatientModel model = new PatientModel();
+        model.setId(entity.id);
+        model.setName(entity.name);
+        model.setKnownDiagnosis(entity.knownDiagnosis);
+        model.setCurrentDiagnosis(entity.currentDiagnosis);
+        model.setDate(entity.date);
+        model.setTime(entity.time);
         model.setImageUrls(entity.imageUrls);
         return model;
     }
 
     private PatientEntity modelToEntity(PatientModel model) {
         PatientEntity entity = new PatientEntity();
+        entity.id = model.getId();
         entity.name = model.getName();
         entity.knownDiagnosis = model.getKnownDiagnosis();
         entity.currentDiagnosis = model.getCurrentDiagnosis();
